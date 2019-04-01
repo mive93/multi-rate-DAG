@@ -22,7 +22,7 @@ public:
 
 private:
 
-	std::vector<Node> nodes_;
+	std::vector<std::shared_ptr<Node>> nodes_;
 	std::vector<Edge> edges_;
 
 	unsigned period_;

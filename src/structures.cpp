@@ -22,7 +22,7 @@ Node::getAncestors()
 }
 
 bool
-isChain(const std::vector<Node*>& nodes)
+isChain(const std::vector<std::shared_ptr<Node>>& nodes)
 {
 	for (int k = 0; k < nodes.size() - 1; k++)
 	{

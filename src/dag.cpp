@@ -23,9 +23,9 @@ DAG::transitiveReduction()
 {
 	for (auto node : nodes_)
 	{
-		for (auto parent = node.pred.begin(); parent != node.pred.end(); parent++)
+		for (auto parent = node->prev.begin(); parent != node->prev.end(); parent++)
 		{
-			for (auto other : node.pred)
+			for (auto other : node->prev)
 			{
 				if (other == *parent)
 					continue;
@@ -34,10 +34,10 @@ DAG::transitiveReduction()
 				{
 					if (*parent == it)
 					{
-						for (auto childOfParent = (*parent)->succ.begin(); childOfParent != (*parent)->succ.end(); childOfParent++)
+						for (auto childOfParent = (*parent)->next.begin(); childOfParent != (*parent)->next.end(); childOfParent++)
 							if (*childOfParent == node)
-								(*parent)->succ.erase(childOfParent);
-						node.pred.erase(parent);
+								(*parent)->next.erase(childOfParent);
+						node->prev.erase(parent);
 					}
 				}
 			}

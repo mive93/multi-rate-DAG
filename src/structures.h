@@ -21,8 +21,6 @@ struct HeterogeneousInfo
 	unsigned processorId;
 };
 
-
-
 struct Node
 {
 	unsigned offset;
@@ -51,7 +49,7 @@ struct MultiNode
 	HeterogeneousInfo* info = nullptr;
 
 	void
-	createNodes(unsigned hyperPeriod);
+	createNodes(unsigned hyperPeriod, std::shared_ptr<Node> globalS, std::shared_ptr<Node> globalE);
 
 	std::vector<std::shared_ptr<Node>> nodes;
 };
@@ -63,15 +61,13 @@ struct MultiEdge
 	int jitter;
 };
 
-
 struct Edge
 {
 	Node* from;
 	Node* to;
 };
 
-
 bool
-isChain(const std::vector<Node*>& nodes);
+isChain(const std::vector<std::shared_ptr<Node>>& nodes);
 
 #endif /* STRUCTURES_H_ */
