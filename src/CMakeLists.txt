@@ -3,4 +3,5 @@ project (dags)
 
 add_executable(main main.cpp
 					dag.cpp
-					structures.cpp)
+					structures.cpp
+					MultiRate.cpp)

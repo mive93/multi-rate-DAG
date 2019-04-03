@@ -56,8 +56,8 @@ struct MultiNode
 
 struct MultiEdge
 {
-	MultiNode* from;
-	MultiNode* to;
+	std::shared_ptr<MultiNode> from;
+	std::shared_ptr<MultiNode> to;
 	int jitter;
 };
 
@@ -65,6 +65,39 @@ struct Edge
 {
 	Node* from;
 	Node* to;
+};
+
+class NodeSet
+{
+public:
+
+private:
+	Node start_;
+	Node end_;
+
+	std::vector<Node> nodes_;
+};
+
+class EdgeSet
+{
+public:
+
+	EdgeSet(NodeSet* nodeSet);
+
+	EdgeSet(const EdgeSet& other);
+
+	std::vector<Edge>
+	getEdges() const;
+
+	NodeSet*
+	getNodeSet() const;
+
+private:
+
+	std::vector<Edge> edges_;
+
+	NodeSet* nodeSet_;
+
 };
 
 bool
