@@ -10,62 +10,8 @@
 #include <vector>
 #include <memory>
 
-enum class Engine
-{
-	CPU, GPU, FPGA
-};
 
-struct HeterogeneousInfo
-{
-	Engine engine;
-	unsigned processorId;
-};
 
-struct Node
-{
-	unsigned offset;
-	unsigned deadline;
-	unsigned wcet;
-//	MultiNode* parent;
-//	unsigned instance;
-
-	unsigned uniqueId;
-
-	std::vector<std::shared_ptr<Node>> prev;
-	std::vector<std::shared_ptr<Node>> next;
-
-	std::vector<std::shared_ptr<Node>>
-	getAncestors();
-};
-
-struct MultiNode
-{
-	unsigned id;
-
-	unsigned period;
-	unsigned deadline;
-	unsigned wcet;
-
-	HeterogeneousInfo* info = nullptr;
-
-	void
-	createNodes(unsigned hyperPeriod, std::shared_ptr<Node> globalS, std::shared_ptr<Node> globalE);
-
-	std::vector<std::shared_ptr<Node>> nodes;
-};
-
-struct MultiEdge
-{
-	std::shared_ptr<MultiNode> from;
-	std::shared_ptr<MultiNode> to;
-	int jitter;
-};
-
-struct Edge
-{
-	Node* from;
-	Node* to;
-};
 
 class NodeSet
 {

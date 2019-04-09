@@ -9,7 +9,11 @@
 #define MULTIRATE_H_
 
 #include <memory>
-#include "structures.h"
+
+#include "DAG/DAG.h"
+#include "MultiRate/MultiEdge.h"
+
+struct MultiNode;
 
 class MultiRateTaskset
 {
@@ -18,10 +22,10 @@ public:
 	MultiRateTaskset();
 
 	std::shared_ptr<MultiNode>
-	addTask(unsigned period, unsigned wcet, unsigned deadline);
+	addTask(unsigned period, unsigned wcet, unsigned deadline, const std::string& name = std::string());
 
 	std::shared_ptr<MultiNode>
-	addTask(unsigned period, unsigned wcet);
+	addTask(unsigned period, unsigned wcet, const std::string& name = std::string());
 
 	std::shared_ptr<MultiEdge>
 	addPrecedenceEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to);
@@ -29,10 +33,20 @@ public:
 	std::shared_ptr<MultiEdge>
 	addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to, unsigned jitter);
 
+	const DAG&
+	createBaselineDAG();
+
+	std::vector<DAG>
+	createDAGs();
+
 private:
+
+	DAG baselineDAG_;
 
 	std::vector<std::shared_ptr<MultiNode>> nodes_;
 	std::vector<std::shared_ptr<MultiEdge>> edges_;
+
+	unsigned hyperPeriod_;
 };
 
 #endif /* MULTIRATE_H_ */
