@@ -19,6 +19,7 @@ struct Node
 	unsigned deadline;
 	unsigned wcet;
 	unsigned bcet;
+	unsigned groupId;
 //	MultiNode* parent;
 //	unsigned instance;
 

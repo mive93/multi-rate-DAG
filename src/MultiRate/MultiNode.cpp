@@ -16,6 +16,7 @@ MultiNode::createNodes(unsigned hyperPeriod)
 		auto node = std::make_shared<Node>();
 		node->wcet = wcet;
 		node->bcet = bcet;
+		node->groupId = id;
 		node->offset = k * period;
 		node->deadline = k * period + deadline;
 		node->name = name + "-" + std::to_string(k);

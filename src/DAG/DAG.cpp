@@ -102,6 +102,80 @@ DAG::printEdges() const
 		std::cout << edge->from->name << " -> " << edge->to->name << std::endl;
 }
 
+
+void 
+DAG::DAGtotikz(std::string filename) const
+{
+	//opening the tex file
+	std::ofstream tikz_file;
+	tikz_file.open (filename);
+
+	//beginning the tikz figure
+	tikz_file << "\\begin{tikzpicture}[shorten >=1pt,node distance=3cm,auto,bend angle=45]\n";
+
+	const int distance = 4; //distance between the nodes
+	int x = 0, y = 0; //x and y of the nodes
+	int cur_groupId = -1;
+	int max_x = 0;
+	
+	//figuring out number of rows and columns of the matrix
+	for (auto node : nodes_)
+	{
+		if (node->name != "start" && node->name != "end")
+		{
+			x += distance;
+			if (node->groupId != cur_groupId)
+			{
+				max_x = x > max_x ? x : max_x;
+				x = distance;
+				y += distance;	
+			}
+			cur_groupId = node->groupId;
+		}
+	}
+
+	//actually inserting the nodes
+	y /= 2;
+	x = 0;
+	cur_groupId = -1;
+
+	for (auto node : nodes_)
+	{
+		if (node->name == "start")
+		{
+			tikz_file << "\\node[state, fill,draw=none,green, text=black] ("<< node->name<<") at (0,0) [below left of=t11]{"<< node->name<<"};\n";
+			x = distance;
+		}
+		else if (node->name == "end")
+		{
+			tikz_file << "\\node[state, fill,draw=none,red,text=black]("<< node->name<<") at ("<<max_x<<",0) {"<< node->name<<"};\n";
+		}
+		else
+		{
+			x += distance;
+			if (node->groupId != cur_groupId)
+			{
+				x = distance;
+				y -= distance;	
+			}
+			cur_groupId = node->groupId;
+			tikz_file << "\\node[state] ("<< node->name<<") at ("<<x<<","<<y<<") {"<<node->name<<"};\n";
+		}
+	}
+
+	//inserting edges
+	tikz_file <<"\\path[->] \n";
+	for (auto edge : edges_)
+		tikz_file << "("<< edge->from->name <<") edge node {} ("<< edge->to->name <<")\n";
+	tikz_file << ";\n";
+	
+	//ending tikz figure
+	tikz_file << "\\end{tikzpicture}\n";
+	
+	//close the file
+	tikz_file.close();
+}
+
 void
 DAG::addEdges(const std::vector<std::shared_ptr<Edge> >& edges)
 {
