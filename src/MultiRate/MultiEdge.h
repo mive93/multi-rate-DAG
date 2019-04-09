@@ -9,12 +9,17 @@
 #define MULTIRATE_MULTIEDGE_H_
 #include "MultiNode.h"
 
+struct Edge;
+
 struct MultiEdge
 {
 	enum class Dependency
 	{
 		PRECEDENCE, DATA
 	};
+
+	std::vector<std::vector<std::shared_ptr<Edge>> >
+	translateToEdges();
 
 	std::shared_ptr<MultiNode> from;
 	std::shared_ptr<MultiNode> to;

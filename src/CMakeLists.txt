@@ -4,7 +4,7 @@ project (dags)
 include_directories(${CMAKE_SOURCE_DIR})
 
 set(MULTIRATE_SRCS	MultiRate/MultiNode.cpp
-#					MultiRate/MultiEdge.cpp
+					MultiRate/MultiEdge.cpp
 					MultiRate/MultiRateTaskset.cpp
 					)
 					
