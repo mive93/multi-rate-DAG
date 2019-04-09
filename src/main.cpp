@@ -33,17 +33,29 @@ taskset2()
 {
 	MultiRateTaskset taskSet;
 
-	auto task1 = taskSet.addTask(10, 2, "sensor1");
-	auto task2 = taskSet.addTask(20, 5, "controller");
+	auto task1 = taskSet.addTask(10, 2, "sensor");
+	auto task2 = taskSet.addTask(10, 5, "sensor");
+	auto task3 = taskSet.addTask(20, 5, "act");
+	auto task3 = taskSet.addTask(20, 5, "act");
 
-	taskSet.addDataEdge(task1, task2, 0);
+	taskSet.addDataEdge(task1, task2, 2);
+//	taskSet.addDataEdge(task2, task3, 1);
 
-	const auto& dag = taskSet.createBaselineDAG();
+//	taskSet.addPrecedenceEdge(task1, task2);
+
+	auto baseline = taskSet.createBaselineDAG();
+
+	baseline.printNodes();
+	baseline.printEdges();
 
 	auto dags = taskSet.createDAGs();
 
-	dag.printNodes();
-	dag.printEdges();
+	for (const auto& dag : dags)
+	{
+		std::cout << "Next DAG:" << std::endl;
+		dag.printEdges();
+		std::cout << std::endl;
+	}
 }
 
 int

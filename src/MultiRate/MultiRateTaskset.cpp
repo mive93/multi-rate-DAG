@@ -8,6 +8,8 @@
 #include "MultiRate/MultiNode.h"
 
 #include <vector>
+#include <iostream>
+
 MultiRateTaskset::MultiRateTaskset() :
 		hyperPeriod_(0)
 {
@@ -94,59 +96,53 @@ MultiRateTaskset::createBaselineDAG()
 std::vector<DAG>
 MultiRateTaskset::createDAGs()
 {
-	std::vector<std::vector<std::vector<Edge>>> edgeSets;
+	std::vector<std::vector<std::vector<std::shared_ptr<Edge>>>> edgeSets;
 	auto start = baselineDAG_.getStart();
 	auto end = baselineDAG_.getEnd();
+
+	std::vector<int> permutSets;
 	for (auto edge : edges_)
 	{
-		std::vector<std::vector<Edge>> edgeSet;
-		unsigned i = edge->from->nodes.size();
-		unsigned j = edge->to->nodes.size();
-
-		for (unsigned k = 0; k < i; k++)
-		{
-
-		}
-
-		if (edge->dependency == MultiEdge::Dependency::PRECEDENCE)
-		{
-
-		}
-
-
-
-		edgeSets.push_back(edgeSet);
+		edgeSets.push_back(edge->translateToEdges());
+		permutSets.push_back(edgeSets.back().size());
 	}
+	permutSets.push_back(1);
 
 	std::vector<int> permutation(edgeSets.size(), 0);
 	int numPermutations = 1;
 	for (const auto& it : edgeSets)
 		numPermutations *= it.size();
 
+	for (int k = permutSets.size() - 2; k >= 0; k--)
+	{
+		permutSets[k] = permutSets[k + 1] * permutSets[k];
+	}
+
+	for (auto s : permutSets)
+		std::cout << s << std::endl;
+
+	std::cout << "permuts " << numPermutations << std::endl;
+
+	std::vector<DAG> dags;
 	for (int k = 0; k < numPermutations; k++)
 	{
+		DAG dag(baselineDAG_);
 
+		int tmp = k;
+		for (int i = 0; i < permutation.size(); i++)
+		{
+			permutation[i] = tmp / permutSets[i+1];
+			tmp = tmp % permutSets[i+1];
+		}
+
+		for (int n = 0; n < edgeSets.size(); n++)
+		{
+			dag.addEdges(edgeSets[n][permutation[n]]);
+		}
+
+		dags.push_back(dag);
 	}
 
-	for (const auto& set : edgeSets)
-	{
-
-	}
-	return std::vector<DAG>();
+	return dags;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
