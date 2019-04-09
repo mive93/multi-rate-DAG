@@ -8,6 +8,9 @@
 #ifndef DAG_H_
 #define DAG_H_
 #include <vector>
+#include <string>
+#include <fstream>
+
 
 #include "Edge.h"
 #include "Node.h"
@@ -53,6 +56,9 @@ public:
 
 	void
 	printEdges() const;
+
+	void 
+	DAGtotikz(std::string filename) const;
 
 	const std::shared_ptr<Node>&
 	getEnd() const;
