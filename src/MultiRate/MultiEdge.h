@@ -18,7 +18,7 @@ struct MultiEdge
 		PRECEDENCE, DATA
 	};
 
-	std::vector<std::vector<std::shared_ptr<Edge>> >
+	std::vector<std::vector<Edge> >
 	translateToEdges();
 
 	std::shared_ptr<MultiNode> from;

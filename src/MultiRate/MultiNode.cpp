@@ -20,6 +20,7 @@ MultiNode::createNodes(unsigned hyperPeriod)
 		node->offset = k * period;
 		node->deadline = k * period + deadline;
 		node->name = name + "-" + std::to_string(k);
+		node->shortName = std::to_string(id) + "-" + std::to_string(k);
 		nodes.push_back(node);
 	}
 

@@ -14,37 +14,44 @@ DAG::DAG() :
 }
 
 bool
-DAG::isCyclic()
+DAG::isCyclic() const
 {
-	return false;
+	unsigned n = nodes_.size();
+	DAGMatrix mat = toDAGMatrix();
+
+	Eigen::VectorXi step = Eigen::VectorXi::Zero(n);
+	step[0] = 1;
+
+	for (int k = 0; k < n; ++k)
+	{
+		step = mat * step;
+		if (step.isZero())
+			return false;
+	}
+
+	return true;
 }
 
 void
 DAG::transitiveReduction()
 {
-	for (auto node : nodes_)
-	{
-		for (auto parent = node->prev.begin(); parent != node->prev.end(); parent++)
-		{
-			for (auto other : node->prev)
-			{
-				if (other == *parent)
-					continue;
+	//TODO Problem: Edges that are inserted twice are recognized as transitive and removed!! Fix somehow
+	std::vector<Edge> newEdges;
 
-				for (auto it : other->getAncestors())
-				{
-					if (*parent == it)
-					{
-						for (auto childOfParent = (*parent)->next.begin();
-								childOfParent != (*parent)->next.end(); childOfParent++)
-							if (*childOfParent == node)
-								(*parent)->next.erase(childOfParent);
-						node->prev.erase(parent);
-					}
-				}
-			}
-		}
+	int oldNumEdges = edges_.size();
+	for (auto& edge : edges_)
+	{
+		edge.flipEdge();
+		bool transitiveEdge = isCyclic();
+		edge.flipEdge();
+		if (!transitiveEdge)
+			newEdges.push_back(edge);
 	}
+	edges_ = newEdges;
+	int newNumEdges = edges_.size();
+
+//	std::cout << "Removed " << oldNumEdges - newNumEdges << "/" << oldNumEdges << " Edges"
+//			<< std::endl;
 
 }
 
@@ -98,17 +105,16 @@ DAG::printNodes() const
 void
 DAG::printEdges() const
 {
-	for (auto edge : edges_)
-		std::cout << edge->from->name << " -> " << edge->to->name << std::endl;
+	for (const auto& edge : edges_)
+		std::cout << edge.from->name << " -> " << edge.to->name << std::endl;
 }
 
-
-void 
-DAG::DAGtotikz(std::string filename) const
+void
+DAG::toTikz(std::string filename) const
 {
 	//opening the tex file
 	std::ofstream tikz_file;
-	tikz_file.open (filename);
+	tikz_file.open(filename);
 
 	//beginning the tikz figure
 	tikz_file << "\\begin{tikzpicture}[shorten >=1pt,node distance=3cm,auto,bend angle=45]\n";
@@ -117,7 +123,7 @@ DAG::DAGtotikz(std::string filename) const
 	int x = 0, y = 0; //x and y of the nodes
 	int cur_groupId = -1;
 	int max_x = 0;
-	
+
 	//figuring out number of rows and columns of the matrix
 	for (auto node : nodes_)
 	{
@@ -128,7 +134,7 @@ DAG::DAGtotikz(std::string filename) const
 			{
 				max_x = x > max_x ? x : max_x;
 				x = distance;
-				y += distance;	
+				y += distance;
 			}
 			cur_groupId = node->groupId;
 		}
@@ -143,12 +149,14 @@ DAG::DAGtotikz(std::string filename) const
 	{
 		if (node->name == "start")
 		{
-			tikz_file << "\\node[state, fill,draw=none,green, text=black] ("<< node->name<<") at (0,0) [below left of=t11]{"<< node->name<<"};\n";
+			tikz_file << "\\node[state, fill,draw=none,green, text=black] (" << node->name
+					<< ") at (0,0) [below left of=t11]{" << node->name << "};\n";
 			x = distance;
 		}
 		else if (node->name == "end")
 		{
-			tikz_file << "\\node[state, fill,draw=none,red,text=black]("<< node->name<<") at ("<<max_x<<",0) {"<< node->name<<"};\n";
+			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << node->name << ") at ("
+					<< max_x << ",0) {" << node->name << "};\n";
 		}
 		else
 		{
@@ -156,36 +164,61 @@ DAG::DAGtotikz(std::string filename) const
 			if (node->groupId != cur_groupId)
 			{
 				x = distance;
-				y -= distance;	
+				y -= distance;
 			}
 			cur_groupId = node->groupId;
-			tikz_file << "\\node[state] ("<< node->name<<") at ("<<x<<","<<y<<") {"<<node->name<<"};\n";
+			tikz_file << "\\node[state] (" << node->name << ") at (" << x << "," << y << ") {"
+					<< node->name << "};\n";
 		}
 	}
 
 	//inserting edges
-	tikz_file <<"\\path[->] \n";
-	for (auto edge : edges_)
-		tikz_file << "("<< edge->from->name <<") edge node {} ("<< edge->to->name <<")\n";
+	tikz_file << "\\path[->] \n";
+	for (const auto& edge : edges_)
+		tikz_file << "(" << edge.from->name << ") edge node {} (" << edge.to->name << ")\n";
 	tikz_file << ";\n";
-	
+
 	//ending tikz figure
 	tikz_file << "\\end{tikzpicture}\n";
-	
+
 	//close the file
 	tikz_file.close();
 }
 
 void
-DAG::addEdges(const std::vector<std::shared_ptr<Edge> >& edges)
+DAG::addEdges(const std::vector<Edge>& edges)
 {
 	edges_.insert(edges_.end(), edges.begin(), edges.end());
 }
 
-std::vector<std::shared_ptr<Edge> >
+const std::vector<Edge>&
 DAG::getEdges() const
 {
 	return edges_;
+}
+
+DAG::DAGMatrix
+DAG::toDAGMatrix() const
+{
+	unsigned n = nodes_.size();
+	DAGMatrix mat = DAGMatrix::Zero(n, n);
+
+	for (const auto& edge : edges_)
+	{
+		mat.col(edge.from->uniqueId)[edge.to->uniqueId] = 1;
+	}
+	return mat;
+}
+
+bool
+DAG::hasEdge(const Edge& e) const
+{
+	for (const auto& edge : edges_)
+	{
+		if (e.from == edge.from && e.to == edge.to)
+			return true;
+	}
+	return false;
 }
 
 void
@@ -211,7 +244,7 @@ DAG::createStartEnd()
 	nodes_.push_back(end_);
 }
 
-std::vector<std::shared_ptr<Node> >
+const std::vector<std::shared_ptr<Node> >&
 DAG::getNodes() const
 {
 	return nodes_;

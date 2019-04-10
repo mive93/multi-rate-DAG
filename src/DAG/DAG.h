@@ -7,16 +7,18 @@
 
 #ifndef DAG_H_
 #define DAG_H_
+#include <eigen3/Eigen/Core>
 #include <vector>
 #include <string>
 #include <fstream>
-
 
 #include "Edge.h"
 #include "Node.h"
 class DAG
 {
 public:
+
+	using DAGMatrix = Eigen::MatrixXi;
 
 	DAG();
 
@@ -28,7 +30,7 @@ public:
 	setPeriod(unsigned period);
 
 	bool
-	isCyclic();
+	isCyclic() const;
 
 	void
 	transitiveReduction();
@@ -37,7 +39,7 @@ public:
 	addNodes(const std::vector<std::shared_ptr<Node>>& nodes);
 
 	void
-	addEdges(const std::vector<std::shared_ptr<Edge>>& edges);
+	addEdges(const std::vector<Edge>& edges);
 
 	unsigned
 	getNumNodes() const;
@@ -45,10 +47,10 @@ public:
 	unsigned
 	getNumEdges() const;
 
-	std::vector<std::shared_ptr<Node>>
+	const std::vector<std::shared_ptr<Node>>&
 	getNodes() const;
 
-	std::vector<std::shared_ptr<Edge>>
+	const std::vector<Edge>&
 	getEdges() const;
 
 	void
@@ -58,7 +60,7 @@ public:
 	printEdges() const;
 
 	void 
-	DAGtotikz(std::string filename) const;
+	toTikz(std::string filename) const;
 
 	const std::shared_ptr<Node>&
 	getEnd() const;
@@ -66,13 +68,19 @@ public:
 	const std::shared_ptr<Node>&
 	getStart() const;
 
+	DAGMatrix
+	toDAGMatrix() const;
+
+	bool
+	hasEdge(const Edge& e) const;
+
 private:
 
 	void
 	createStartEnd();
 
 	std::vector<std::shared_ptr<Node>> nodes_;
-	std::vector<std::shared_ptr<Edge>> edges_;
+	std::vector<Edge> edges_;
 
 	std::shared_ptr<Node> start_;
 	std::shared_ptr<Node> end_;

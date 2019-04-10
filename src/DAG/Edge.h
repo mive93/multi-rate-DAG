@@ -17,6 +17,9 @@ struct Edge
 
 	Edge(std::shared_ptr<Node> from, std::shared_ptr<Node> to);
 
+	void
+	flipEdge();
+
 	std::shared_ptr<Node> from;
 	std::shared_ptr<Node> to;
 

@@ -20,20 +20,11 @@ struct Node
 	unsigned wcet;
 	unsigned bcet;
 	unsigned groupId;
-//	MultiNode* parent;
-//	unsigned instance;
 
 	unsigned uniqueId;
 
 	std::string name;
-
-	std::vector<std::shared_ptr<Node>> prev;
-	std::vector<std::shared_ptr<Node>> next;
-
-	std::vector<std::shared_ptr<Edge>> edges;
-
-	std::vector<std::shared_ptr<Node>>
-	getAncestors();
+	std::string shortName;
 };
 
 

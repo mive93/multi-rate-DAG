@@ -11,7 +11,7 @@
 #include <iostream>
 
 MultiRateTaskset::MultiRateTaskset() :
-		hyperPeriod_(0)
+		dummyNodes_(std::make_shared<DummyNodes>()), hyperPeriod_(0)
 {
 }
 
@@ -80,25 +80,29 @@ MultiRateTaskset::createBaselineDAG()
 	for (auto& node : nodes_)
 	{
 		auto nodes = node->createNodes(hyperPeriod_);
-		std::vector<std::shared_ptr<Edge>> edges;
-		edges.push_back(std::make_shared<Edge>(start, nodes.front()));
+		std::vector<Edge> edges;
+		edges.push_back(Edge(start, nodes.front()));
 		for (unsigned k = 0; k < nodes.size() - 1; k++)
 		{
-			edges.push_back(std::make_shared<Edge>(nodes[k], nodes[k + 1]));
+			edges.push_back(Edge(nodes[k], nodes[k + 1]));
 		}
-		edges.push_back(std::make_shared<Edge>(nodes.back(), end));
+		edges.push_back(Edge(nodes.back(), end));
 		baselineDAG_.addNodes(nodes);
 		baselineDAG_.addEdges(edges);
 	}
+
+	dummyNodes_->addToDAG(baselineDAG_);
+	// Set Unique IDs
+	auto nodes = baselineDAG_.getNodes();
+	for (unsigned k = 0; k < nodes.size(); k++)
+		nodes[k]->uniqueId = k;
 	return baselineDAG_;
 }
 
 std::vector<DAG>
 MultiRateTaskset::createDAGs()
 {
-	std::vector<std::vector<std::vector<std::shared_ptr<Edge>>>> edgeSets;
-	auto start = baselineDAG_.getStart();
-	auto end = baselineDAG_.getEnd();
+	std::vector<std::vector<std::vector<Edge>>> edgeSets;
 
 	std::vector<int> permutSets;
 	for (auto edge : edges_)
@@ -118,10 +122,8 @@ MultiRateTaskset::createDAGs()
 		permutSets[k] = permutSets[k + 1] * permutSets[k];
 	}
 
-	for (auto s : permutSets)
-		std::cout << s << std::endl;
-
-	std::cout << "permuts " << numPermutations << std::endl;
+	int cyclicDags = 0;
+	int brokenDummyChain = 0;
 
 	std::vector<DAG> dags;
 	for (int k = 0; k < numPermutations; k++)
@@ -131,8 +133,8 @@ MultiRateTaskset::createDAGs()
 		int tmp = k;
 		for (int i = 0; i < permutation.size(); i++)
 		{
-			permutation[i] = tmp / permutSets[i+1];
-			tmp = tmp % permutSets[i+1];
+			permutation[i] = tmp / permutSets[i + 1];
+			tmp = tmp % permutSets[i + 1];
 		}
 
 		for (int n = 0; n < edgeSets.size(); n++)
@@ -140,9 +142,32 @@ MultiRateTaskset::createDAGs()
 			dag.addEdges(edgeSets[n][permutation[n]]);
 		}
 
+		if (dag.isCyclic())
+		{
+			cyclicDags++;
+			continue;
+		}
+
+		dag.transitiveReduction();
+
+		//Check if Dummy chain was broken, making the DAG not schedulable
+		if (dummyNodes_->brokenDummyChain(dag))
+		{
+			brokenDummyChain++;
+			continue;
+		}
+
 		dags.push_back(dag);
 	}
+
+	std::cout << cyclicDags << " cyclic Dags were excluded" << std::endl;
+	std::cout << brokenDummyChain << " Dags were excluded due to broken Dummy Chain" << std::endl;
 
 	return dags;
 }
 
+std::shared_ptr<DummyNodes>
+MultiRateTaskset::getDummyNodes() const
+{
+	return dummyNodes_;
+}

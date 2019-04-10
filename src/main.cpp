@@ -5,9 +5,13 @@
  *      Author: mirco
  */
 
+#include <eigen3/Eigen/Core>
 #include <iostream>
 #include "MultiRate/MultiRateTaskset.h"
 
+#include <set>
+
+#include "MultiRate/DummyNodes.h"
 void
 taskset1()
 {
@@ -26,7 +30,7 @@ taskset1()
 
 	auto dags = taskSet.createDAGs();
 
-	dags[2].DAGtotikz("test.tex");
+	dags[2].toTikz("test.tex");
 
 
 }
@@ -54,7 +58,21 @@ taskset3()
 
 	auto dags = taskSet.createDAGs();
 
-	dags[69].DAGtotikz("test.tex");
+	std::cout << dags.size() << " DAGs were created" << std::endl;
+
+	auto dummy = taskSet.getDummyNodes();
+
+	int k = 0;
+
+	for (const auto& dag : dags)
+	{
+		if (dummy->brokenDummyChain(dag))
+			std::cout << "Broken Dummy chain in " << k << std::endl;
+		k++;
+	}
+
+	dags[26].toTikz("Reduced");
+
 
 }
 
@@ -91,6 +109,7 @@ int
 main(int argc, char** argv)
 {
 	taskset3();
+
 
 
 }

@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "DAG/DAG.h"
+#include "MultiRate/DummyNodes.h"
 #include "MultiRate/MultiEdge.h"
 
 struct MultiNode;
@@ -39,12 +40,17 @@ public:
 	std::vector<DAG>
 	createDAGs();
 
+	std::shared_ptr<DummyNodes>
+	getDummyNodes() const;
+
 private:
 
 	DAG baselineDAG_;
 
 	std::vector<std::shared_ptr<MultiNode>> nodes_;
 	std::vector<std::shared_ptr<MultiEdge>> edges_;
+
+	std::shared_ptr<DummyNodes> dummyNodes_;
 
 	unsigned hyperPeriod_;
 };

@@ -9,7 +9,7 @@
 
 #include <iostream>
 
-std::vector<std::vector<std::shared_ptr<Edge>> >
+std::vector<std::vector<Edge> >
 MultiEdge::translateToEdges()
 {
 	auto fromNodes = from->nodes;
@@ -18,7 +18,7 @@ MultiEdge::translateToEdges()
 	int numFrom = fromNodes.size();
 	int numTo = toNodes.size();
 
-	std::vector<std::vector<std::shared_ptr<Edge>>> edgeSets;
+	std::vector<std::vector<Edge>> edgeSets;
 
 	unsigned maxPeriod = std::max(to->period, from->period);
 	unsigned minPeriod = std::min(to->period, from->period);
@@ -26,22 +26,22 @@ MultiEdge::translateToEdges()
 
 	if (dependency == Dependency::PRECEDENCE)
 	{
-		std::vector<std::shared_ptr<Edge>> edgeSet;
+		std::vector<Edge> edgeSet;
 		int min = std::min(numTo, numFrom);
 		for (int k = 0; k < min; k++)
 		{
-			std::shared_ptr<Edge> edge;
+			Edge edge;
 			if (numFrom > numTo)
 			{
 				int from = numFrom / min * (k + 1) - 1;
 				int to = k;
-				edge = std::make_shared<Edge>(fromNodes[from], toNodes[to]);
+				edge = Edge(fromNodes[from], toNodes[to]);
 			}
 			else
 			{
 				int from = k;
 				int to = numTo / min * k;
-				edge = std::make_shared<Edge>(fromNodes[from], toNodes[to]);
+				edge = Edge(fromNodes[from], toNodes[to]);
 			}
 			edgeSet.push_back(edge);
 		}
@@ -65,7 +65,7 @@ MultiEdge::translateToEdges()
 	for (int m = 0; m < numPermutations; m++)
 	{
 
-		std::vector<std::shared_ptr<Edge>> edgeSet;
+		std::vector<Edge> edgeSet;
 		int min = std::min(numTo, numFrom);
 		for (int k = 0; k < min; k++)
 		{
@@ -75,12 +75,12 @@ MultiEdge::translateToEdges()
 
 			if (from >= numFrom / min * k)
 			{
-				edgeSet.push_back(std::make_shared<Edge>(fromNodes[from], toNodes[k]));
+				edgeSet.push_back(Edge(fromNodes[from], toNodes[k]));
 			}
 
 			if (to < numFrom / min * (k + 1))
 			{
-				edgeSet.push_back(std::make_shared<Edge>(toNodes[k], fromNodes[to]));
+				edgeSet.push_back(Edge(toNodes[k], fromNodes[to]));
 			}
 
 		}

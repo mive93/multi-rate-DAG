@@ -6,6 +6,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 set(MULTIRATE_SRCS	MultiRate/MultiNode.cpp
 					MultiRate/MultiEdge.cpp
 					MultiRate/MultiRateTaskset.cpp
+					MultiRate/DummyNodes.cpp
 					)
 					
 set(DAG_SRCS	DAG/DAG.cpp
