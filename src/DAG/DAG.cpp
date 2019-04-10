@@ -132,16 +132,15 @@ DAG::toTikz(std::string filename) const
 			x += distance;
 			if (node->groupId != cur_groupId)
 			{
-				max_x = x > max_x ? x : max_x;
 				x = distance;
 				y += distance;
 			}
 			cur_groupId = node->groupId;
+			max_x = x > max_x ? x : max_x;
 		}
 	}
 	
 	//actually inserting the nodes
-	max_x = x > max_x ? x : max_x;
 	y /= 2;
 	x = 0;
 	cur_groupId = -1;
@@ -158,7 +157,7 @@ DAG::toTikz(std::string filename) const
 		else if (node->name == "end")
 		{
 			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << 
-				node->shortName << ") at (" << max_x << ",0) {" << 
+				node->shortName << ") at (" << max_x + distance << ",0) {" << 
 				node->shortName << "};\n";
 		}
 		else
