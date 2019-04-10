@@ -119,7 +119,7 @@ DAG::toTikz(std::string filename) const
 	//beginning the tikz figure
 	tikz_file << "\\begin{tikzpicture}[shorten >=1pt,node distance=3cm,auto,bend angle=45]\n";
 
-	const int distance = 4; //distance between the nodes
+	const int distance = 2; //distance between the nodes
 	int x = 0, y = 0; //x and y of the nodes
 	int cur_groupId = -1;
 	int max_x = 0;
@@ -139,8 +139,9 @@ DAG::toTikz(std::string filename) const
 			cur_groupId = node->groupId;
 		}
 	}
-
+	
 	//actually inserting the nodes
+	max_x = x > max_x ? x : max_x;
 	y /= 2;
 	x = 0;
 	cur_groupId = -1;
@@ -149,14 +150,16 @@ DAG::toTikz(std::string filename) const
 	{
 		if (node->name == "start")
 		{
-			tikz_file << "\\node[state, fill,draw=none,green, text=black] (" << node->name
-					<< ") at (0,0) [below left of=t11]{" << node->name << "};\n";
+			tikz_file << "\\node[state, fill,draw=none,green, text=black] (" <<
+				node->shortName << ") at (0,0) [below left of=t11]{" << 
+				node->shortName << "};\n";
 			x = distance;
 		}
 		else if (node->name == "end")
 		{
-			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << node->name << ") at ("
-					<< max_x << ",0) {" << node->name << "};\n";
+			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << 
+				node->shortName << ") at (" << max_x << ",0) {" << 
+				node->shortName << "};\n";
 		}
 		else
 		{
@@ -167,15 +170,21 @@ DAG::toTikz(std::string filename) const
 				y -= distance;
 			}
 			cur_groupId = node->groupId;
-			tikz_file << "\\node[state] (" << node->name << ") at (" << x << "," << y << ") {"
-					<< node->name << "};\n";
+			
+			if(node->groupId == 666)
+				tikz_file << "\\node[state, fill,draw=none,blue,text=white] (" 
+					<< node->shortName << ") at (" << x << "," << y << ") {"
+					<< node->shortName << "};\n";
+			else
+				tikz_file << "\\node[state] (" << node->shortName << 
+					") at (" << x << "," << y << ") {"<< node->shortName << "};\n";
 		}
 	}
 
 	//inserting edges
 	tikz_file << "\\path[->] \n";
 	for (const auto& edge : edges_)
-		tikz_file << "(" << edge.from->name << ") edge node {} (" << edge.to->name << ")\n";
+		tikz_file << "(" << edge.from->shortName << ") edge node {} (" << edge.to->shortName << ")\n";
 	tikz_file << ";\n";
 
 	//ending tikz figure
@@ -231,6 +240,7 @@ DAG::createStartEnd()
 	start_->offset = 0;
 	start_->uniqueId = 0;
 	start_->name = "start";
+	start_->shortName = "S";
 
 	end_ = std::make_shared<Node>();
 	end_->bcet = 0;
@@ -239,6 +249,7 @@ DAG::createStartEnd()
 	end_->offset = period_;
 	end_->uniqueId = 10000;
 	end_->name = "end";
+	end_->shortName = "E";
 
 	nodes_.push_back(start_);
 	nodes_.push_back(end_);
