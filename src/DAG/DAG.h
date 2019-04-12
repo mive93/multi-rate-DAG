@@ -14,9 +14,21 @@
 
 #include "Edge.h"
 #include "Node.h"
+
+struct MultiEdge;
+
 class DAG
 {
 public:
+
+	struct Chain
+	{
+		std::vector<int> wcetsStack;
+		std::vector<int> uniquesStack;
+
+		int wcet = 0;
+		std::vector<int> uniqueCount;
+	};
 
 	using DAGMatrix = Eigen::MatrixXi;
 
@@ -74,10 +86,16 @@ public:
 	bool
 	hasEdge(const Edge& e) const;
 
+	bool
+	checkJitter(const std::vector<MultiEdge>& jitterInfo) const;
+
 private:
 
 	void
 	createStartEnd();
+
+	void
+	chainRecursion(const std::vector<MultiEdge>& jitterInfo);
 
 	std::vector<std::shared_ptr<Node>> nodes_;
 	std::vector<Edge> edges_;

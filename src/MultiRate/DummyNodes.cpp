@@ -38,7 +38,7 @@ DummyNodes::addToDAG(DAG& dag)
 		dummyNode->wcet = end - begin;
 		dummyNode->bcet = end - begin;
 		dummyNode->name = "dummy" + std::to_string(begin) + "-" + std::to_string(end);
-		dummyNode->shortName = "d-" + std::to_string(begin);
+		dummyNode->shortName = std::to_string(begin) + "-" + std::to_string(end);
 		dummyNode->groupId = 666;
 		nodes.push_back(dummyNode);
 		dummyStart.insert(std::make_pair(begin, dummyNode));

@@ -54,24 +54,32 @@ taskset3()
 	taskSet.addDataEdge(task2, task4, 0);
 	taskSet.addDataEdge(task4, task5, 0);
 
+
+
+
 	const auto& baseline = taskSet.createBaselineDAG();
 
 	auto dags = taskSet.createDAGs();
 
-	std::cout << dags.size() << " DAGs were created" << std::endl;
-
-	auto dummy = taskSet.getDummyNodes();
-
-	int k = 0;
+	unsigned numEdges = 0;
+	unsigned id = 0;
+	unsigned k = 0;
 
 	for (const auto& dag : dags)
 	{
-		if (dummy->brokenDummyChain(dag))
-			std::cout << "Broken Dummy chain in " << k << std::endl;
+		if (dag.getEdges().size() > numEdges)
+		{
+			numEdges = dag.getEdges().size();
+			id = k;
+		}
 		k++;
 	}
 
-	dags[26].toTikz("Reduced");
+
+	dags[id].toTikz("Reduced");
+	auto mat = dags[id].toDAGMatrix();
+
+	dags[id].checkJitter(taskSet.getEdges());
 
 
 }

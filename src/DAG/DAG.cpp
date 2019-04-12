@@ -176,7 +176,7 @@ DAG::toTikz(std::string filename) const
 					<< node->shortName << "};\n";
 			else
 				tikz_file << "\\node[state] (" << node->shortName << 
-					") at (" << x << "," << y << ") {"<< node->shortName << "};\n";
+					") at (" << x << "," << y << ") {$"<< node->shortName << "$};\n";
 		}
 	}
 
@@ -277,3 +277,64 @@ DAG::DAG(const DAG& other) :
 				other.getEnd()), period_(other.period_)
 {
 }
+
+bool
+DAG::checkJitter(const std::vector<MultiEdge>& jitterInfo) const
+{
+	auto mat = toDAGMatrix();
+
+	std::vector<std::vector<int>> children;
+
+	for (int k = 0; k < mat.cols(); ++k)
+	{
+		children.push_back(std::vector<int>());
+		for (int l = 0; l < mat.rows(); ++l)
+		{
+			if (mat.col(k)[l] == 1)
+				children[k].push_back(l);
+		}
+	}
+
+	Chain chain;
+
+
+	return true;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

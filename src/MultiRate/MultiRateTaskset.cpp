@@ -23,7 +23,7 @@ MultiRateTaskset::addTask(unsigned period, unsigned wcet, unsigned deadline,
 	mult->period = period;
 	mult->wcet = wcet;
 	mult->deadline = deadline;
-	mult->id = nodes_.size();
+	mult->id = nodes_.size() + 1; //id 0 is for start
 
 	if (name.empty())
 		mult->name = std::to_string(mult->id);
@@ -44,31 +44,31 @@ MultiRateTaskset::addTask(unsigned period, unsigned wcet, const std::string& nam
 	return addTask(period, wcet, period, name);
 }
 
-std::shared_ptr<MultiEdge>
+const MultiEdge&
 MultiRateTaskset::addPrecedenceEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to)
 {
-	auto edge = std::make_shared<MultiEdge>();
-	edge->from = from;
-	edge->to = to;
-	edge->dependency = MultiEdge::Dependency::PRECEDENCE;
-	edge->jitter = 0; //Precedence does not have jitter
+	MultiEdge edge;
+	edge.from = from;
+	edge.to = to;
+	edge.dependency = MultiEdge::Dependency::PRECEDENCE;
+	edge.jitter = 0; //Precedence does not have jitter
 	edges_.push_back(edge);
 
-	return edge;
+	return edges_.back();
 }
 
-std::shared_ptr<MultiEdge>
+const MultiEdge&
 MultiRateTaskset::addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to,
 		unsigned jitter)
 {
-	auto edge = std::make_shared<MultiEdge>();
-	edge->from = from;
-	edge->to = to;
-	edge->dependency = MultiEdge::Dependency::DATA;
-	edge->jitter = jitter;
+	MultiEdge edge;
+	edge.from = from;
+	edge.to = to;
+	edge.dependency = MultiEdge::Dependency::DATA;
+	edge.jitter = jitter;
 	edges_.push_back(edge);
 
-	return edge;
+	return edges_.back();
 }
 
 const DAG&
@@ -99,15 +99,15 @@ MultiRateTaskset::createBaselineDAG()
 	return baselineDAG_;
 }
 
-std::vector<DAG>
+const std::vector<DAG>&
 MultiRateTaskset::createDAGs()
 {
 	std::vector<std::vector<std::vector<Edge>>> edgeSets;
 
 	std::vector<int> permutSets;
-	for (auto edge : edges_)
+	for (auto& edge : edges_)
 	{
-		edgeSets.push_back(edge->translateToEdges());
+		edgeSets.push_back(edge.translateToEdges());
 		permutSets.push_back(edgeSets.back().size());
 	}
 	permutSets.push_back(1);
@@ -124,8 +124,11 @@ MultiRateTaskset::createDAGs()
 
 	int cyclicDags = 0;
 	int brokenDummyChain = 0;
+	int sameDags = 0;
 
-	std::vector<DAG> dags;
+	std::cout << numPermutations << " Permutations available" << std::endl;
+
+	dags_.clear();
 	for (int k = 0; k < numPermutations; k++)
 	{
 		DAG dag(baselineDAG_);
@@ -157,14 +160,32 @@ MultiRateTaskset::createDAGs()
 			continue;
 		}
 
-		dags.push_back(dag);
+		for (const auto& other : dags_)
+		{
+			if ((other.toDAGMatrix() - dag.toDAGMatrix()).isZero())
+			{
+				sameDags++;
+				continue;
+			}
+		}
+
+		dags_.push_back(dag);
 	}
 
 	std::cout << cyclicDags << " cyclic Dags were excluded" << std::endl;
 	std::cout << brokenDummyChain << " Dags were excluded due to broken Dummy Chain" << std::endl;
+	std::cout << sameDags << " Dags were removed because they were duplicates" << std::endl;
+	std::cout << dags_.size() << " valid DAGs were created" << std::endl;
 
-	return dags;
+	return dags_;
 }
+
+const std::vector<MultiEdge>&
+MultiRateTaskset::getEdges() const
+{
+	return edges_;
+}
+
 
 std::shared_ptr<DummyNodes>
 MultiRateTaskset::getDummyNodes() const
