@@ -42,9 +42,9 @@ taskset3()
 
 	auto task1 = taskSet.addTask(5, 2, "imu");
 	auto task2 = taskSet.addTask(20, 4, "gps");
-	auto task3 = taskSet.addTask(10, 5, "planner");
+	auto task3 = taskSet.addTask(10, 3, "planner");
 	auto task4 = taskSet.addTask(10, 3, "controller");
-	auto task5 = taskSet.addTask(20, 3, "act");
+	auto task5 = taskSet.addTask(40, 3, "act");
 
 	taskSet.addPrecedenceEdge(task3, task4);
 
@@ -55,19 +55,20 @@ taskset3()
 	taskSet.addDataEdge(task4, task5, 0);
 
 
-
-
 	const auto& baseline = taskSet.createBaselineDAG();
 
 	auto dags = taskSet.createDAGs();
 
-	unsigned numEdges = 0;
+	if (dags.empty())
+		return;
+
+	unsigned numEdges = 1000000;
 	unsigned id = 0;
 	unsigned k = 0;
 
 	for (const auto& dag : dags)
 	{
-		if (dag.getEdges().size() > numEdges)
+		if (dag.getEdges().size() < numEdges)
 		{
 			numEdges = dag.getEdges().size();
 			id = k;
@@ -77,10 +78,6 @@ taskset3()
 
 
 	dags[id].toTikz("Reduced");
-	auto mat = dags[id].toDAGMatrix();
-
-	dags[id].checkJitter(taskSet.getEdges());
-
 
 }
 

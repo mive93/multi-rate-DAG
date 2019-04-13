@@ -296,27 +296,41 @@ DAG::checkJitter(const std::vector<MultiEdge>& jitterInfo) const
 	}
 
 	Chain chain;
+	chain.nodesStack.push_back(0);
 
+	try
+	{
+
+		chainRecursion(chain, children);
+	} catch(int& error)
+	{
+//		if (error == 1)
+//			std::cout << "WCET sum too high." << std::endl;
+		return false;
+	}
 
 	return true;
 
 }
 
+void
+DAG::chainRecursion(Chain& chain, const std::vector<std::vector<int> >& children) const
+{
+	auto node = chain.nodesStack.back();
+	for (auto child : children[node])
+	{
+		chain.nodesStack.push_back(child);
+		chain.wcetsStack.push_back(nodes_[child]->wcet);
+		chain.wcet += chain.wcetsStack.back();
+		if (chain.wcet > period_)
+			throw(int(1));
+		chainRecursion(chain, children);
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	chain.wcet -= chain.wcetsStack.back();
+	chain.wcetsStack.pop_back();
+	chain.nodesStack.pop_back();
+}
 
 
 

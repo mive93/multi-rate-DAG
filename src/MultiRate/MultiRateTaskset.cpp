@@ -124,6 +124,7 @@ MultiRateTaskset::createDAGs()
 
 	int cyclicDags = 0;
 	int brokenDummyChain = 0;
+	int wcetFailure = 0;
 	int sameDags = 0;
 
 	std::cout << numPermutations << " Permutations available" << std::endl;
@@ -160,6 +161,13 @@ MultiRateTaskset::createDAGs()
 			continue;
 		}
 
+		//Check WCET sum in the chains
+		if (!dag.checkJitter(edges_))
+		{
+			wcetFailure++;
+			continue;
+		}
+
 		for (const auto& other : dags_)
 		{
 			if ((other.toDAGMatrix() - dag.toDAGMatrix()).isZero())
@@ -174,6 +182,7 @@ MultiRateTaskset::createDAGs()
 
 	std::cout << cyclicDags << " cyclic Dags were excluded" << std::endl;
 	std::cout << brokenDummyChain << " Dags were excluded due to broken Dummy Chain" << std::endl;
+	std::cout << wcetFailure << " Dags were removed because the chains are too long" << std::endl;
 	std::cout << sameDags << " Dags were removed because they were duplicates" << std::endl;
 	std::cout << dags_.size() << " valid DAGs were created" << std::endl;
 

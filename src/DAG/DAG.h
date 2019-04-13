@@ -25,6 +25,7 @@ public:
 	{
 		std::vector<int> wcetsStack;
 		std::vector<int> uniquesStack;
+		std::vector<int> nodesStack;
 
 		int wcet = 0;
 		std::vector<int> uniqueCount;
@@ -95,7 +96,8 @@ private:
 	createStartEnd();
 
 	void
-	chainRecursion(const std::vector<MultiEdge>& jitterInfo);
+	chainRecursion(Chain& chain, const std::vector<std::vector<int>>& children) const;
+
 
 	std::vector<std::shared_ptr<Node>> nodes_;
 	std::vector<Edge> edges_;
