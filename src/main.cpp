@@ -44,7 +44,7 @@ taskset3()
 	auto task3 = taskSet.addTask(10, 3, "planner");
 	auto task4 = taskSet.addTask(10, 3, "controller");
 	auto task5 = taskSet.addTask(20, 2, "act");
-//	auto task6 = taskSet.addTask(40, 27, 30, "train");
+	auto task6 = taskSet.addTask(40, 27, 30, "train");
 
 	taskSet.addPrecedenceEdge(task3, task4);
 
@@ -54,8 +54,8 @@ taskset3()
 	taskSet.addDataEdge(task2, task4, 0);
 	taskSet.addDataEdge(task4, task5, 0);
 //
-//	taskSet.addDataEdge(task1, task6, 8);
-//	taskSet.addDataEdge(task2, task6, 1);
+	taskSet.addDataEdge(task1, task6, 8);
+	taskSet.addDataEdge(task2, task6, 1);
 
 	const auto& baseline = taskSet.createBaselineDAG();
 
