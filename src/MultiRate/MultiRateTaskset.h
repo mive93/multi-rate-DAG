@@ -45,6 +45,10 @@ public:
 
 	const std::vector<MultiEdge>&
 	getEdges() const;
+
+	bool
+	checkJitter(const DAG& dag) const;
+
 private:
 
 	DAG baselineDAG_;

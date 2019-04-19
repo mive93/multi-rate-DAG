@@ -32,10 +32,9 @@ taskset1()
 
 	dags[2].toTikz("test.tex");
 
-
 }
 
-void
+int
 taskset3()
 {
 	MultiRateTaskset taskSet;
@@ -44,7 +43,8 @@ taskset3()
 	auto task2 = taskSet.addTask(20, 4, "gps");
 	auto task3 = taskSet.addTask(10, 3, "planner");
 	auto task4 = taskSet.addTask(10, 3, "controller");
-	auto task5 = taskSet.addTask(40, 3, "act");
+	auto task5 = taskSet.addTask(20, 2, "act");
+//	auto task6 = taskSet.addTask(40, 27, 30, "train");
 
 	taskSet.addPrecedenceEdge(task3, task4);
 
@@ -53,14 +53,16 @@ taskset3()
 	taskSet.addDataEdge(task2, task3, 0);
 	taskSet.addDataEdge(task2, task4, 0);
 	taskSet.addDataEdge(task4, task5, 0);
-
+//
+//	taskSet.addDataEdge(task1, task6, 8);
+//	taskSet.addDataEdge(task2, task6, 1);
 
 	const auto& baseline = taskSet.createBaselineDAG();
 
 	auto dags = taskSet.createDAGs();
 
 	if (dags.empty())
-		return;
+		return 1;
 
 	unsigned numEdges = 1000000;
 	unsigned id = 0;
@@ -76,8 +78,12 @@ taskset3()
 		k++;
 	}
 
+	int identDAG = 2;
+	if (!taskSet.checkJitter(dags[identDAG]))
+		std::cout << "Jitter not correct" << std::endl;
+	dags[identDAG].toTikz("prova.tex");
 
-	dags[id].toTikz("Reduced");
+	return 0;
 
 }
 
@@ -113,8 +119,6 @@ taskset2()
 int
 main(int argc, char** argv)
 {
-	taskset3();
-
-
+	return taskset3();
 
 }

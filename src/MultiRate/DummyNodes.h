@@ -17,12 +17,13 @@ struct DummyNodes
 {
 
 	void
-	addToDAG(DAG& dag);
+	addToDAG(DAG& dag, int hyperperiod);
 
 	bool
 	brokenDummyChain(const DAG& dag);
 
-	std::vector<std::shared_ptr<Node>> nodes;
+	std::vector<std::shared_ptr<Node>> dummyTasks;
+	std::vector<std::shared_ptr<Node>> syncNodes;
 	std::vector<Edge> dummyChain;
 };
 

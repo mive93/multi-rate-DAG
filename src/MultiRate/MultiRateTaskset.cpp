@@ -91,7 +91,11 @@ MultiRateTaskset::createBaselineDAG()
 		baselineDAG_.addEdges(edges);
 	}
 
-	dummyNodes_->addToDAG(baselineDAG_);
+	dummyNodes_->addToDAG(baselineDAG_, hyperPeriod_);
+
+	std::cout << "Baseline DAG created" << std::endl;
+	std::cout << "Number of Nodes: " << baselineDAG_.getNumNodes() << std::endl;
+	std::cout << "Number of Edges: " << baselineDAG_.getNumEdges() << std::endl;
 	// Set Unique IDs
 	auto nodes = baselineDAG_.getNodes();
 	for (unsigned k = 0; k < nodes.size(); k++)
@@ -125,6 +129,7 @@ MultiRateTaskset::createDAGs()
 	int cyclicDags = 0;
 	int brokenDummyChain = 0;
 	int wcetFailure = 0;
+	int jitterFailure = 0;
 	int sameDags = 0;
 
 	std::cout << numPermutations << " Permutations available" << std::endl;
@@ -162,20 +167,27 @@ MultiRateTaskset::createDAGs()
 		}
 
 		//Check WCET sum in the chains
-		if (!dag.checkJitter(edges_))
+		if (!dag.checkLongestChain())
 		{
 			wcetFailure++;
 			continue;
 		}
 
-		for (const auto& other : dags_)
+		if (!checkJitter(dag))
 		{
-			if ((other.toDAGMatrix() - dag.toDAGMatrix()).isZero())
-			{
-				sameDags++;
-				continue;
-			}
+			dag.toTikz("incorrect.tex");
+			jitterFailure++;
+			continue;
 		}
+
+//		for (const auto& other : dags_)
+//		{
+//			if ((other.toDAGMatrix() - dag.toDAGMatrix()).isZero())
+//			{
+//				sameDags++;
+//				continue;
+//			}
+//		}
 
 		dags_.push_back(dag);
 	}
@@ -183,7 +195,9 @@ MultiRateTaskset::createDAGs()
 	std::cout << cyclicDags << " cyclic Dags were excluded" << std::endl;
 	std::cout << brokenDummyChain << " Dags were excluded due to broken Dummy Chain" << std::endl;
 	std::cout << wcetFailure << " Dags were removed because the chains are too long" << std::endl;
-	std::cout << sameDags << " Dags were removed because they were duplicates" << std::endl;
+	std::cout << jitterFailure << " Dags were removed because the parallelism is incorrect"
+			<< std::endl;
+//	std::cout << sameDags << " Dags were removed because they were duplicates" << std::endl;
 	std::cout << dags_.size() << " valid DAGs were created" << std::endl;
 
 	return dags_;
@@ -195,9 +209,35 @@ MultiRateTaskset::getEdges() const
 	return edges_;
 }
 
-
 std::shared_ptr<DummyNodes>
 MultiRateTaskset::getDummyNodes() const
 {
 	return dummyNodes_;
+}
+
+bool
+MultiRateTaskset::checkJitter(const DAG& dag) const
+{
+	auto jitterMat = dag.getJitterMatrix();
+	auto groupMat = dag.getGroupMatrix(nodes_.size());
+
+	Eigen::MatrixXi parMat = groupMat.transpose() * jitterMat * groupMat;
+
+	for (const auto& edge : edges_)
+	{
+		int from = edge.from->id;
+		int to = edge.to->id;
+
+		int normFactor = hyperPeriod_ / std::max(edge.from->period, edge.to->period);
+		float jitter = (float)parMat.coeff(from - 1, to - 1) / normFactor;
+		if ((float) edge.jitter != jitter)
+		{
+
+			std::cout << "Jitter from " << from << " to " << to << " should be " << edge.jitter
+					<< ", but is " << (float)parMat.coeff(from - 1, to - 1) / normFactor
+					<< " with normFac " << normFactor << std::endl;
+			return false;
+		}
+	}
+	return true;
 }

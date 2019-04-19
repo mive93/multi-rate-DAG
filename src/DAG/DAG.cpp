@@ -4,9 +4,16 @@
  *  Created on: Apr 1, 2019
  *      Author: mirco
  */
-#include "DAG.h"
+#include "DAG/DAG.h"
+#include <cmath>
+#include <eigen3/Eigen/Core>
+
+#include <eigen3/Eigen/Dense>
 
 #include <iostream>
+
+using std::ceil;
+using std::log2;
 DAG::DAG() :
 		period_(0)
 {
@@ -20,7 +27,7 @@ DAG::isCyclic() const
 	DAGMatrix mat = toDAGMatrix();
 
 	Eigen::VectorXi step = Eigen::VectorXi::Zero(n);
-	step[0] = 1;
+	step[0] = true;
 
 	for (int k = 0; k < n; ++k)
 	{
@@ -49,9 +56,6 @@ DAG::transitiveReduction()
 	}
 	edges_ = newEdges;
 	int newNumEdges = edges_.size();
-
-//	std::cout << "Removed " << oldNumEdges - newNumEdges << "/" << oldNumEdges << " Edges"
-//			<< std::endl;
 
 }
 
@@ -139,7 +143,7 @@ DAG::toTikz(std::string filename) const
 			max_x = x > max_x ? x : max_x;
 		}
 	}
-	
+
 	//actually inserting the nodes
 	y /= 2;
 	x = 0;
@@ -149,16 +153,14 @@ DAG::toTikz(std::string filename) const
 	{
 		if (node->name == "start")
 		{
-			tikz_file << "\\node[state, fill,draw=none,green, text=black] (" <<
-				node->shortName << ") at (0,0) [below left of=t11]{" << 
-				node->shortName << "};\n";
+			tikz_file << "\\node[state, fill,draw=none,green, text=black] (" << node->shortName
+					<< ") at (0,0) {" << node->shortName << "};\n";
 			x = distance;
 		}
 		else if (node->name == "end")
 		{
-			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << 
-				node->shortName << ") at (" << max_x + distance << ",0) {" << 
-				node->shortName << "};\n";
+			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << node->shortName
+					<< ") at (" << max_x + distance << ",0) {" << node->shortName << "};\n";
 		}
 		else
 		{
@@ -169,21 +171,21 @@ DAG::toTikz(std::string filename) const
 				y -= distance;
 			}
 			cur_groupId = node->groupId;
-			
-			if(node->groupId == 666)
-				tikz_file << "\\node[state, fill,draw=none,blue,text=white] (" 
-					<< node->shortName << ") at (" << x << "," << y << ") {"
-					<< node->shortName << "};\n";
+
+			if (node->groupId == 666)
+				tikz_file << "\\node[state, fill,draw=none,blue,text=white] (" << node->shortName
+						<< ") at (" << x << "," << y << ") {" << node->shortName << "};\n";
 			else
-				tikz_file << "\\node[state] (" << node->shortName << 
-					") at (" << x << "," << y << ") {$"<< node->shortName << "$};\n";
+				tikz_file << "\\node[state] (" << node->shortName << ") at (" << x << "," << y
+						<< ") {$" << node->shortName << "$};\n";
 		}
 	}
 
 	//inserting edges
 	tikz_file << "\\path[->] \n";
 	for (const auto& edge : edges_)
-		tikz_file << "(" << edge.from->shortName << ") edge node {} (" << edge.to->shortName << ")\n";
+		tikz_file << "(" << edge.from->shortName << ") edge node {} (" << edge.to->shortName
+				<< ")\n";
 	tikz_file << ";\n";
 
 	//ending tikz figure
@@ -279,7 +281,7 @@ DAG::DAG(const DAG& other) :
 }
 
 bool
-DAG::checkJitter(const std::vector<MultiEdge>& jitterInfo) const
+DAG::checkLongestChain() const
 {
 	auto mat = toDAGMatrix();
 
@@ -300,21 +302,17 @@ DAG::checkJitter(const std::vector<MultiEdge>& jitterInfo) const
 
 	try
 	{
-
-		chainRecursion(chain, children);
-	} catch(int& error)
+		chainRecursionWCET(chain, children);
+	} catch (int&)
 	{
-//		if (error == 1)
-//			std::cout << "WCET sum too high." << std::endl;
 		return false;
 	}
 
 	return true;
-
 }
 
 void
-DAG::chainRecursion(Chain& chain, const std::vector<std::vector<int> >& children) const
+DAG::chainRecursionWCET(Chain& chain, const std::vector<std::vector<int> >& children) const
 {
 	auto node = chain.nodesStack.back();
 	for (auto child : children[node])
@@ -324,7 +322,7 @@ DAG::chainRecursion(Chain& chain, const std::vector<std::vector<int> >& children
 		chain.wcet += chain.wcetsStack.back();
 		if (chain.wcet > period_)
 			throw(int(1));
-		chainRecursion(chain, children);
+		chainRecursionWCET(chain, children);
 	}
 
 	chain.wcet -= chain.wcetsStack.back();
@@ -332,22 +330,56 @@ DAG::chainRecursion(Chain& chain, const std::vector<std::vector<int> >& children
 	chain.nodesStack.pop_back();
 }
 
+Eigen::Matrix<int, -1, -1>
+DAG::getJitterMatrix() const
+{
+	DAGMatrix mat = toDAGMatrix();
+	mat = mat + DAGMatrix::Identity(mat.rows(), mat.cols());
+
+	int n = mat.rows();
+
+	auto pre = mat;
+	auto anc = mat;
+	anc.transposeInPlace();
+
+	for (int k = 0; k < std::ceil(std::log2(double(n))); k++)
+	{
+		pre = pre * pre;
+		anc = anc * anc;
+	}
+
+	DAGMatrix ret = anc + pre;
+	for (int k = 0; k < mat.cols(); k++)
+	{
+		for (int l = 0; l < mat.rows(); l++)
+		{
+			if (ret.coeff(k,l) == 0)
+				ret.coeffRef(k,l) = 1;
+			else
+				ret.coeffRef(k,l) = 0;
+		}
+	}
+
+	return ret;
+}
 
 
+Eigen::MatrixXi
+DAG::getGroupMatrix(int N) const
+{
+	int n = nodes_.size();
+	Eigen::Matrix<int, -1, -1> mat = Eigen::Matrix<int, -1, -1>::Zero(n,N);
 
+	for (auto node : nodes_)
+	{
+		int k = node->groupId;
+		if (k == 0 || k == 666 || k == 667) //Start and end
+			continue;
+		mat.coeffRef(node->uniqueId, k-1) = 1;
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
+	return mat;
+}
 
 
 

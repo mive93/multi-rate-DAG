@@ -11,7 +11,7 @@
 #include <map>
 
 void
-DummyNodes::addToDAG(DAG& dag)
+DummyNodes::addToDAG(DAG& dag, int hyperperiod)
 {
 	auto dagNodes = dag.getNodes();
 
@@ -23,59 +23,75 @@ DummyNodes::addToDAG(DAG& dag)
 		dummyVals.insert(node->deadline);
 	}
 
-	std::map<unsigned, std::shared_ptr<Node>> dummyEnd;
-	std::map<unsigned, std::shared_ptr<Node>> dummyStart;
+	std::map<unsigned, std::shared_ptr<Node>> sync;
+
 	for (auto it = dummyVals.begin(); it != dummyVals.end(); it++)
 	{
-		auto dummyNode = std::make_shared<Node>();
-		int begin = *it;
-		auto next = std::next(it);
-		if (next == dummyVals.end())
-			break;
-		int end = *next;
-		dummyNode->offset = begin;
-		dummyNode->deadline = end;
-		dummyNode->wcet = end - begin;
-		dummyNode->bcet = end - begin;
-		dummyNode->name = "dummy" + std::to_string(begin) + "-" + std::to_string(end);
-		dummyNode->shortName = std::to_string(begin) + "-" + std::to_string(end);
-		dummyNode->groupId = 666;
-		nodes.push_back(dummyNode);
-		dummyStart.insert(std::make_pair(begin, dummyNode));
-		dummyEnd.insert(std::make_pair(end, dummyNode));
-	}
+		//Skip start and end
+		if (*it == 0 || *it == hyperperiod)
+			continue;
 
+		auto syncNode = std::make_shared<Node>(*it, *it, 0, 0, 666);
+		syncNode->name = "sync" + std::to_string(*it);
+		syncNode->shortName = std::to_string(*it);
+
+		sync.insert(std::make_pair(*it, syncNode));
+		syncNodes.push_back(syncNode);
+	}
 
 	std::vector<Edge> syncEdges;
 	for (auto node : dagNodes)
 	{
-		auto startSync = dummyEnd.find(node->offset);
-		if (startSync != dummyEnd.end())
+		auto startSync = sync.find(node->offset);
+		if (startSync != sync.end())
 			syncEdges.push_back(Edge(startSync->second, node));
 
-		auto endSync = dummyStart.find(node->deadline);
-		if (endSync != dummyStart.end())
+		auto endSync = sync.find(node->deadline);
+		if (endSync != sync.end())
 			syncEdges.push_back(Edge(node, endSync->second));
 	}
 
-	//Edges from start to dummy and dummy to end already there
-	for (auto it = nodes.begin(); it != nodes.end(); it++)
+	auto dummy = std::make_shared<Node>(0, syncNodes.front()->offset, syncNodes.front()->offset,
+			syncNodes.front()->offset, 667);
+	dummy->name = "dummy0-" + std::to_string(syncNodes.front()->offset);
+	dummy->shortName = "0-" + std::to_string(syncNodes.front()->offset);
+	dummyTasks.push_back(dummy);
+	dummyChain.push_back(Edge(dag.getStart(), dummy));
+	dummyChain.push_back(Edge(dummy, syncNodes.front()));
+	for (auto it = syncNodes.begin(); it != syncNodes.end(); it++)
 	{
 		auto next = std::next(it);
-		if (next == nodes.end())
+		if (next == syncNodes.end())
 			break;
-		dummyChain.push_back(Edge(*it, *next));
-	}
+		unsigned s = (*it)->deadline;
+		unsigned e = (*next)->offset;
+		auto d = std::make_shared<Node>(s, e, e - s, e - s, 667);
+		d->name = "dummy" + std::to_string(s) + "-" + std::to_string(e);
+		d->shortName = std::to_string(s) + "-" + std::to_string(e);
 
-	dag.addNodes(nodes);
+		dummyTasks.push_back(d);
+		dummyChain.push_back(Edge(*it, d));
+		dummyChain.push_back(Edge(d, *next));
+	}
+	unsigned s = syncNodes.back()->deadline;
+	unsigned e = dag.getEnd()->offset;
+	dummy = std::make_shared<Node>(s, e, e - s, e - s, 667);
+	dummy->name = "dummy" + std::to_string(s) + "-" + std::to_string(e);
+	dummy->shortName = std::to_string(s) + "-" + std::to_string(e);
+	dummyTasks.push_back(dummy);
+	dummyChain.push_back(Edge(syncNodes.back(), dummy));
+	dummyChain.push_back(Edge(dummy, dag.getEnd()));
+
+
+
+	dag.addNodes(syncNodes);
+	dag.addNodes(dummyTasks);
 	dag.addEdges(dummyChain);
 	dag.addEdges(syncEdges);
 
 	//Adding these edges to the chain after adding the chain to the dag to not duplicate edges
-	dummyChain.insert(dummyChain.begin(), Edge(dag.getStart(), nodes.front()));
-	dummyChain.push_back(Edge(nodes.back(), dag.getEnd()));
-
-	std::cout << "Adding " << nodes.size() << " Dummy nodes" << std::endl;
+	std::cout << "Adding " << syncNodes.size() << " Sync nodes" << std::endl;
+	std::cout << "Adding " << dummyTasks.size() << " Dummy tasks" << std::endl;
 	std::cout << "Adding " << syncEdges.size() << " sync edges" << std::endl;
 
 }
@@ -88,13 +104,4 @@ DummyNodes::brokenDummyChain(const DAG& dag)
 			return true;
 	return false;
 }
-
-
-
-
-
-
-
-
-
 

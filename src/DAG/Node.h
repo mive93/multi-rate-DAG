@@ -10,11 +10,22 @@
 #include <memory>
 #include <vector>
 
-struct Edge;
-
-
 struct Node
 {
+	inline
+	Node() :
+			offset(0), deadline(0), wcet(0), bcet(0), groupId(0), uniqueId(0)
+	{
+	}
+	;
+
+	inline
+	Node(unsigned o, unsigned d, unsigned wc, unsigned bc, unsigned g) :
+			offset(o), deadline(d), wcet(wc), bcet(bc), groupId(g), uniqueId(0)
+	{
+	}
+	;
+
 	unsigned offset;
 	unsigned deadline;
 	unsigned wcet;
@@ -26,9 +37,5 @@ struct Node
 	std::string name;
 	std::string shortName;
 };
-
-
-
-
 
 #endif /* DAG_NODE_H_ */

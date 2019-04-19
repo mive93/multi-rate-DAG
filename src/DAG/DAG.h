@@ -24,11 +24,9 @@ public:
 	struct Chain
 	{
 		std::vector<int> wcetsStack;
-		std::vector<int> uniquesStack;
 		std::vector<int> nodesStack;
 
 		int wcet = 0;
-		std::vector<int> uniqueCount;
 	};
 
 	using DAGMatrix = Eigen::MatrixXi;
@@ -84,11 +82,20 @@ public:
 	DAGMatrix
 	toDAGMatrix() const;
 
+	Eigen::Matrix<int, -1, -1>
+	getJitterMatrix() const;
+
 	bool
 	hasEdge(const Edge& e) const;
 
 	bool
 	checkJitter(const std::vector<MultiEdge>& jitterInfo) const;
+
+	bool
+	checkLongestChain() const;
+
+	Eigen::MatrixXi
+	getGroupMatrix(int N) const;
 
 private:
 
@@ -96,7 +103,10 @@ private:
 	createStartEnd();
 
 	void
-	chainRecursion(Chain& chain, const std::vector<std::vector<int>>& children) const;
+	chainRecursionJitter(Chain& chain, const std::vector<std::vector<int>>& children, const std::vector<MultiEdge>& jitterInfo) const;
+
+	void
+	chainRecursionWCET(Chain& chain, const std::vector<std::vector<int>>& children) const;
 
 
 	std::vector<std::shared_ptr<Node>> nodes_;
