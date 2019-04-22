@@ -54,7 +54,7 @@ taskset3()
 	taskSet.addDataEdge(task2, task4, 0);
 	taskSet.addDataEdge(task4, task5, 0);
 //
-	taskSet.addDataEdge(task1, task6, 8);
+	taskSet.addDataEdge(task1, task6, 6);
 	taskSet.addDataEdge(task2, task6, 1);
 
 	const auto& baseline = taskSet.createBaselineDAG();
@@ -79,7 +79,17 @@ taskset3()
 	}
 
 	int identDAG = 2;
-	if (!taskSet.checkJitter(dags[identDAG]))
+
+	std::cout << dags[identDAG].getGroupMatrix(6) << std::endl;
+
+	std::cout << "Task 3" << std::endl;
+	for (auto node : task3->nodes)
+		std::cout << node->uniqueId << std::endl;
+
+	std::cout << "Task 4" << std::endl;
+	for (auto node : task4->nodes)
+		std::cout << node->uniqueId << std::endl;
+ 	if (!taskSet.checkJitter(dags[identDAG]))
 		std::cout << "Jitter not correct" << std::endl;
 	dags[identDAG].toTikz("prova.tex");
 

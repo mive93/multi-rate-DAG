@@ -220,6 +220,42 @@ DAG::toDAGMatrix() const
 	return mat;
 }
 
+void
+DAG::fromDAGMatrix(const DAGMatrix& mat)
+{
+	edges_.clear();
+	for (int k = 0; k < mat.cols(); k++)
+	{
+		for (int l = 0; l < mat.rows(); l++)
+		{
+			if (mat.coeff(l, k) == 1)
+				edges_.push_back(Edge(nodes_.at(k), nodes_.at(l)));
+		}
+	}
+}
+
+void
+DAG::createMats()
+{
+	dagMatrix_ = toDAGMatrix();
+	//Delete double edges
+	fromDAGMatrix(dagMatrix_);
+
+	predecessors_ = dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols());
+	ancestors_ = predecessors_.transpose();
+
+	int n = predecessors_.rows();
+
+	for (int k = 0; k < std::ceil(std::log2(double(n))); k++)
+	{
+		predecessors_ = predecessors_ * predecessors_;
+		ancestors_ = ancestors_ * ancestors_;
+	}
+
+	convertToBooleanMat(predecessors_);
+	convertToBooleanMat(ancestors_);
+}
+
 bool
 DAG::hasEdge(const Edge& e) const
 {
@@ -276,7 +312,8 @@ DAG::getStart() const
 
 DAG::DAG(const DAG& other) :
 		nodes_(other.getNodes()), edges_(other.getEdges()), start_(other.getStart()), end_(
-				other.getEnd()), period_(other.period_)
+				other.getEnd()), period_(other.period_), dagMatrix_(other.getDAGMatrix()), predecessors_(
+				other.getPredecessors()), ancestors_(other.getAncestors())
 {
 }
 
@@ -333,54 +370,50 @@ DAG::chainRecursionWCET(Chain& chain, const std::vector<std::vector<int> >& chil
 Eigen::Matrix<int, -1, -1>
 DAG::getJitterMatrix() const
 {
-	DAGMatrix mat = toDAGMatrix();
-	mat = mat + DAGMatrix::Identity(mat.rows(), mat.cols());
-
-	int n = mat.rows();
-
-	auto pre = mat;
-	auto anc = mat;
-	anc.transposeInPlace();
-
-	for (int k = 0; k < std::ceil(std::log2(double(n))); k++)
-	{
-		pre = pre * pre;
-		anc = anc * anc;
-	}
-
-	DAGMatrix ret = anc + pre;
-	for (int k = 0; k < mat.cols(); k++)
-	{
-		for (int l = 0; l < mat.rows(); l++)
-		{
-			if (ret.coeff(k,l) == 0)
-				ret.coeffRef(k,l) = 1;
-			else
-				ret.coeffRef(k,l) = 0;
-		}
-	}
+	DAGMatrix ret = DAGMatrix::Ones(ancestors_.rows(), ancestors_.cols()) - ancestors_ - predecessors_;
+	convertToBooleanMat(ret);
+//	for (int k = 0; k < ret.cols(); k++)
+//	{
+//		for (int l = 0; l < ret.rows(); l++)
+//		{
+//			if (ret.coeff(l, k) == 0)
+//				ret.coeffRef(l, k) = 1;
+//			else
+//				ret.coeffRef(l, k) = 0;
+//		}
+//	}
 
 	return ret;
 }
-
 
 Eigen::MatrixXi
 DAG::getGroupMatrix(int N) const
 {
 	int n = nodes_.size();
-	Eigen::Matrix<int, -1, -1> mat = Eigen::Matrix<int, -1, -1>::Zero(n,N);
+	Eigen::Matrix<int, -1, -1> mat = Eigen::Matrix<int, -1, -1>::Zero(n, N);
 
 	for (auto node : nodes_)
 	{
 		int k = node->groupId;
 		if (k == 0 || k == 666 || k == 667) //Start and end
 			continue;
-		mat.coeffRef(node->uniqueId, k-1) = 1;
+		mat.coeffRef(node->uniqueId, k - 1) = 1;
 	}
 
 	return mat;
 }
 
-
-
-
+void
+DAG::convertToBooleanMat(DAGMatrix& mat) const
+{
+	for (int k = 0; k < mat.cols(); k++)
+	{
+		for (int l = 0; l < mat.rows(); l++)
+		{
+			if (mat.coeff(l, k) > 0)
+				mat.coeffRef(l, k) = 1;
+			else
+				mat.coeffRef(l, k) = 0;
+		}
+	}
+}

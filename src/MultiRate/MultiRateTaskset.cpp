@@ -157,6 +157,8 @@ MultiRateTaskset::createDAGs()
 			continue;
 		}
 
+		dag.createMats();
+
 		dag.transitiveReduction();
 
 		//Check if Dummy chain was broken, making the DAG not schedulable
@@ -189,7 +191,7 @@ MultiRateTaskset::createDAGs()
 //			}
 //		}
 
-		dags_.push_back(dag);
+		dags_.push_back(std::move(dag));
 	}
 
 	std::cout << cyclicDags << " cyclic Dags were excluded" << std::endl;
@@ -236,7 +238,7 @@ MultiRateTaskset::checkJitter(const DAG& dag) const
 			std::cout << "Jitter from " << from << " to " << to << " should be " << edge.jitter
 					<< ", but is " << (float)parMat.coeff(from - 1, to - 1) / normFactor
 					<< " with normFac " << normFactor << std::endl;
-			return false;
+//			return false;
 		}
 	}
 	return true;
