@@ -80,7 +80,8 @@ taskset3()
 
 	int identDAG = 2;
 
-	std::cout << dags[identDAG].getGroupMatrix(6) << std::endl;
+	std::cout << dags[identDAG].getAncestors() << std::endl << std::endl;
+	std::cout << dags[identDAG].getPredecessors() << std::endl;
 
 	std::cout << "Task 3" << std::endl;
 	for (auto node : task3->nodes)

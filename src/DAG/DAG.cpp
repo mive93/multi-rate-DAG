@@ -12,8 +12,6 @@
 
 #include <iostream>
 
-using std::ceil;
-using std::log2;
 DAG::DAG() :
 		period_(0)
 {
