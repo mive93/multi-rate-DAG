@@ -30,7 +30,7 @@ public:
 
 	};
 
-	using DAGMatrix = Eigen::MatrixXi;
+	using DAGMatrix = Eigen::Matrix<int, -1, -1>;
 
 	DAG();
 
@@ -110,11 +110,11 @@ public:
 		return dagMatrix_;
 	}
 
-	const DAGMatrix&
-	getPredecessors() const
-	{
-		return predecessors_;
-	}
+//	const DAGMatrix&
+//	getDescendents() const
+//	{
+////		return descendents_;
+//	}
 
 	void
 	createMats();
@@ -131,7 +131,7 @@ private:
 	convertToBooleanMat(DAGMatrix& mat) const;
 
 	DAGMatrix dagMatrix_;
-	DAGMatrix predecessors_;
+//	DAGMatrix descendents_;
 	DAGMatrix ancestors_;
 
 	std::vector<std::shared_ptr<Node>> nodes_;

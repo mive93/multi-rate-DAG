@@ -37,6 +37,8 @@ taskset1()
 int
 taskset3()
 {
+	 time_t tstart, tend;
+	 tstart = time(0);
 	MultiRateTaskset taskSet;
 
 	auto task1 = taskSet.addTask(5, 2, "imu");
@@ -44,7 +46,7 @@ taskset3()
 	auto task3 = taskSet.addTask(10, 3, "planner");
 	auto task4 = taskSet.addTask(10, 3, "controller");
 	auto task5 = taskSet.addTask(20, 2, "act");
-	auto task6 = taskSet.addTask(40, 27, 30, "train");
+	auto task6 = taskSet.addTask(40, 27, "train");
 
 	taskSet.addPrecedenceEdge(task3, task4);
 
@@ -53,7 +55,7 @@ taskset3()
 	taskSet.addDataEdge(task2, task3, 0);
 	taskSet.addDataEdge(task2, task4, 0);
 	taskSet.addDataEdge(task4, task5, 0);
-//
+////
 	taskSet.addDataEdge(task1, task6, 6);
 	taskSet.addDataEdge(task2, task6, 1);
 
@@ -80,19 +82,12 @@ taskset3()
 
 	int identDAG = 2;
 
-	std::cout << dags[identDAG].getAncestors() << std::endl << std::endl;
-	std::cout << dags[identDAG].getPredecessors() << std::endl;
-
-	std::cout << "Task 3" << std::endl;
-	for (auto node : task3->nodes)
-		std::cout << node->uniqueId << std::endl;
-
-	std::cout << "Task 4" << std::endl;
-	for (auto node : task4->nodes)
-		std::cout << node->uniqueId << std::endl;
  	if (!taskSet.checkJitter(dags[identDAG]))
 		std::cout << "Jitter not correct" << std::endl;
 	dags[identDAG].toTikz("prova.tex");
+
+	tend = time(0);
+	std::cout << "It took "<< difftime(tend, tstart) <<" second(s)."<< std::endl;
 
 	return 0;
 

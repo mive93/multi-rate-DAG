@@ -41,6 +41,7 @@ void
 DAG::transitiveReduction()
 {
 	//TODO Problem: Edges that are inserted twice are recognized as transitive and removed!! Fix somehow
+/*
 	std::vector<Edge> newEdges;
 
 	int oldNumEdges = edges_.size();
@@ -54,6 +55,11 @@ DAG::transitiveReduction()
 	}
 	edges_ = newEdges;
 	int newNumEdges = edges_.size();
+	*/
+
+	DAGMatrix mat = dagMatrix_ - (dagMatrix_ * dagMatrix_ * ancestors_.transpose());
+	convertToBooleanMat(mat);
+	fromDAGMatrix(mat);
 
 }
 
@@ -239,19 +245,19 @@ DAG::createMats()
 	//Delete double edges
 	fromDAGMatrix(dagMatrix_);
 
-	predecessors_ = dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols());
-	ancestors_ = predecessors_.transpose();
+//	descendents_ = dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols());
+	ancestors_ = (dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols())).transpose();
 
-	int n = predecessors_.rows();
+	int n = ancestors_.rows();
 
-	for (int k = 0; k < std::ceil(std::log2(double(n))); k++)
+	for (int k = 0; k < std::ceil(std::log2(static_cast<double>(n))); k++)
 	{
-		predecessors_ = predecessors_ * predecessors_;
+//		descendents_ = descendents_ * descendents_;
 		ancestors_ = ancestors_ * ancestors_;
+//		convertToBooleanMat(descendents_);
+		convertToBooleanMat(ancestors_);
 	}
 
-	convertToBooleanMat(predecessors_);
-	convertToBooleanMat(ancestors_);
 }
 
 bool
@@ -310,8 +316,7 @@ DAG::getStart() const
 
 DAG::DAG(const DAG& other) :
 		nodes_(other.getNodes()), edges_(other.getEdges()), start_(other.getStart()), end_(
-				other.getEnd()), period_(other.period_), dagMatrix_(other.getDAGMatrix()), predecessors_(
-				other.getPredecessors()), ancestors_(other.getAncestors())
+				other.getEnd()), period_(other.period_), dagMatrix_(other.getDAGMatrix()), ancestors_(other.getAncestors())
 {
 }
 
@@ -365,10 +370,10 @@ DAG::chainRecursionWCET(Chain& chain, const std::vector<std::vector<int> >& chil
 	chain.nodesStack.pop_back();
 }
 
-Eigen::Matrix<int, -1, -1>
+DAG::DAGMatrix
 DAG::getJitterMatrix() const
 {
-	DAGMatrix ret = DAGMatrix::Ones(ancestors_.rows(), ancestors_.cols()) - ancestors_ - predecessors_;
+	DAGMatrix ret = DAGMatrix::Ones(ancestors_.rows(), ancestors_.cols()) - ancestors_ - ancestors_.transpose();
 	convertToBooleanMat(ret);
 //	for (int k = 0; k < ret.cols(); k++)
 //	{

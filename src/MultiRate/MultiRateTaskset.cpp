@@ -225,6 +225,7 @@ MultiRateTaskset::checkJitter(const DAG& dag) const
 
 	Eigen::MatrixXi parMat = groupMat.transpose() * jitterMat * groupMat;
 
+	bool correct = true;
 	for (const auto& edge : edges_)
 	{
 		int from = edge.from->id;
@@ -238,8 +239,8 @@ MultiRateTaskset::checkJitter(const DAG& dag) const
 			std::cout << "Jitter from " << from << " to " << to << " should be " << edge.jitter
 					<< ", but is " << (float)parMat.coeff(from - 1, to - 1) / normFactor
 					<< " with normFac " << normFactor << std::endl;
-//			return false;
+			correct = false;
 		}
 	}
-	return true;
+	return correct;
 }
