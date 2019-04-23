@@ -54,7 +54,7 @@ taskset3()
 	taskSet.addDataEdge(task2, task4, 0);
 	taskSet.addDataEdge(task4, task5, 0);
 //
-	taskSet.addDataEdge(task1, task6, 8);
+	taskSet.addDataEdge(task1, task6, 6);
 	taskSet.addDataEdge(task2, task6, 1);
 
 	const auto& baseline = taskSet.createBaselineDAG();
