@@ -37,6 +37,8 @@ taskset1()
 int
 taskset3()
 {
+	 time_t tstart, tend;
+	 tstart = time(0);
 	MultiRateTaskset taskSet;
 
 	auto task1 = taskSet.addTask(5, 2, "imu");
@@ -44,7 +46,7 @@ taskset3()
 	auto task3 = taskSet.addTask(10, 3, "planner");
 	auto task4 = taskSet.addTask(10, 3, "controller");
 	auto task5 = taskSet.addTask(20, 2, "act");
-	auto task6 = taskSet.addTask(40, 27, 30, "train");
+	auto task6 = taskSet.addTask(40, 27, "train");
 
 	taskSet.addPrecedenceEdge(task3, task4);
 
@@ -53,7 +55,6 @@ taskset3()
 	taskSet.addDataEdge(task2, task3, 0);
 	taskSet.addDataEdge(task2, task4, 0);
 	taskSet.addDataEdge(task4, task5, 0);
-//
 	taskSet.addDataEdge(task1, task6, 6);
 	taskSet.addDataEdge(task2, task6, 1);
 
@@ -79,9 +80,13 @@ taskset3()
 	}
 
 	int identDAG = 2;
-	if (!taskSet.checkJitter(dags[identDAG]))
+
+ 	if (!taskSet.checkJitter(dags[identDAG]))
 		std::cout << "Jitter not correct" << std::endl;
 	dags[identDAG].toTikz("prova.tex");
+
+	tend = time(0);
+	std::cout << "It took "<< difftime(tend, tstart) <<" second(s)."<< std::endl;
 
 	return 0;
 

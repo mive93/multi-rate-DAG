@@ -157,6 +157,8 @@ MultiRateTaskset::createDAGs()
 			continue;
 		}
 
+		dag.createMats();
+
 		dag.transitiveReduction();
 
 		//Check if Dummy chain was broken, making the DAG not schedulable
@@ -189,7 +191,7 @@ MultiRateTaskset::createDAGs()
 //			}
 //		}
 
-		dags_.push_back(dag);
+		dags_.push_back(std::move(dag));
 	}
 
 	std::cout << cyclicDags << " cyclic Dags were excluded" << std::endl;
@@ -223,6 +225,7 @@ MultiRateTaskset::checkJitter(const DAG& dag) const
 
 	Eigen::MatrixXi parMat = groupMat.transpose() * jitterMat * groupMat;
 
+	bool correct = true;
 	for (const auto& edge : edges_)
 	{
 		int from = edge.from->id;
@@ -236,8 +239,8 @@ MultiRateTaskset::checkJitter(const DAG& dag) const
 			std::cout << "Jitter from " << from << " to " << to << " should be " << edge.jitter
 					<< ", but is " << (float)parMat.coeff(from - 1, to - 1) / normFactor
 					<< " with normFac " << normFactor << std::endl;
-			return false;
+			correct = false;
 		}
 	}
-	return true;
+	return correct;
 }

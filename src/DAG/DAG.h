@@ -27,9 +27,10 @@ public:
 		std::vector<int> nodesStack;
 
 		int wcet = 0;
+
 	};
 
-	using DAGMatrix = Eigen::MatrixXi;
+	using DAGMatrix = Eigen::Matrix<int, -1, -1>;
 
 	DAG();
 
@@ -82,6 +83,9 @@ public:
 	DAGMatrix
 	toDAGMatrix() const;
 
+	void
+	fromDAGMatrix(const DAGMatrix& mat);
+
 	Eigen::Matrix<int, -1, -1>
 	getJitterMatrix() const;
 
@@ -89,13 +93,31 @@ public:
 	hasEdge(const Edge& e) const;
 
 	bool
-	checkJitter(const std::vector<MultiEdge>& jitterInfo) const;
-
-	bool
 	checkLongestChain() const;
 
 	Eigen::MatrixXi
 	getGroupMatrix(int N) const;
+
+	const DAGMatrix&
+	getAncestors() const
+	{
+		return ancestors_;
+	}
+
+	const DAGMatrix&
+	getDAGMatrix() const
+	{
+		return dagMatrix_;
+	}
+
+//	const DAGMatrix&
+//	getDescendents() const
+//	{
+////		return descendents_;
+//	}
+
+	void
+	createMats();
 
 private:
 
@@ -103,11 +125,14 @@ private:
 	createStartEnd();
 
 	void
-	chainRecursionJitter(Chain& chain, const std::vector<std::vector<int>>& children, const std::vector<MultiEdge>& jitterInfo) const;
-
-	void
 	chainRecursionWCET(Chain& chain, const std::vector<std::vector<int>>& children) const;
 
+	void
+	convertToBooleanMat(DAGMatrix& mat) const;
+
+	DAGMatrix dagMatrix_;
+//	DAGMatrix descendents_;
+	DAGMatrix ancestors_;
 
 	std::vector<std::shared_ptr<Node>> nodes_;
 	std::vector<Edge> edges_;
