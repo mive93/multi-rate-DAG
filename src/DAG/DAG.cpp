@@ -149,9 +149,12 @@ DAG::toTikz(std::string filename) const
         = std::max_element(n_instances.begin(),n_instances.end(),[] (const std::pair<unsigned int,int>& a, const std::pair<unsigned int,int>& b)->bool{ return a.second < b.second; } );
 
 	//actually inserting the nodes
-	y = (n_instances.size() -1) /2;
+	y = n_instances.size()/2*distance;
 	x = 0;
 	cur_groupId = -1;
+
+	float l_max = distance*(max_inst->second+1);
+	float cur_distance;
 
 	for (auto node : nodes_)
 	{
@@ -168,10 +171,12 @@ DAG::toTikz(std::string filename) const
 		}
 		else
 		{
-			x += distance;
+			
+			x += cur_distance;
 			if (static_cast<int>(node->groupId) != cur_groupId)
 			{
-				x = (max_inst->second/2.0 - n_instances[node->groupId]/2.0 +1 )*distance;
+				cur_distance = l_max/(n_instances[node->groupId]+1);
+				x = cur_distance;
 				y -= distance;
 			}
 			cur_groupId = node->groupId;
