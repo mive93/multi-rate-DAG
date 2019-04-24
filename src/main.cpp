@@ -51,8 +51,8 @@ taskset3()
 
 	taskSet.addPrecedenceEdge(task3, task4);
 
-	taskSet.addDataEdge(task1, task3, 1);
-	taskSet.addDataEdge(task1, task4, 1);
+	taskSet.addDataEdge(task1, task3, 0);
+	taskSet.addDataEdge(task1, task4, 0);
 	taskSet.addDataEdge(task2, task3, 0);
 	taskSet.addDataEdge(task2, task4, 0);
 	taskSet.addDataEdge(task4, task5, 0);
