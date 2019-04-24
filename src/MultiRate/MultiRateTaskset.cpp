@@ -247,3 +247,58 @@ MultiRateTaskset::checkJitter(const DAG& dag) const
 	}
 	return correct;
 }
+
+
+void 
+MultiRateTaskset::toTikz(std::string filename) const
+{
+	//opening the tex file
+	std::ofstream tikz_file;
+	tikz_file.open(filename);
+
+	//beginning the tikz figure
+	tikz_file << "\\documentclass[tikz,border=10pt]{standalone}\n"
+				"\\usepackage{tkz-graph}\n"
+				"\\usetikzlibrary{automata}\n"
+				"\\usetikzlibrary[automata]\n"
+				"\\begin{document}\n";
+
+	tikz_file << "\\begin{tikzpicture}[shorten >=1pt,node distance=3cm,auto,bend angle=45]\n";
+	tikz_file << "\\tikzstyle{state}=[state with output]\n";
+
+
+	float x = 0, y=0, max_y =0;
+	for(auto node: nodes_)
+	{
+
+		for ( auto edge : edges_)
+		{
+			if( edge.to->name == node->name)
+			{
+				y = max_y/2;
+				x += 4;
+				break;
+			}
+		}
+		max_y = (y > max_y) ? y:max_y;
+		tikz_file << "\\node[state] (" << node->name<< ") at (" << x << "," << y << ") {" << node->name << " \\nodepart{lower} $T="<<node->period<<"$};\n";
+		y+=4;
+	}
+
+	tikz_file << "\\path[->] \n";
+	std::string edge_type="";
+	for ( auto edge : edges_)
+	{
+		if(edge.dependency ==MultiEdge::Dependency::DATA)
+		edge_type="[dashed]";
+		tikz_file << "(" << edge.from->name << ") edge"<<edge_type<<" node {"<<edge.jitter<<"} (" << edge.to->name<< ")\n";
+	}
+	tikz_file << ";\n";
+
+	//ending tikz figure
+	tikz_file << "\\end{tikzpicture}\n";
+	tikz_file << "\\end{document}\n";
+
+	//close the file
+	tikz_file.close();
+}
