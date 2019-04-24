@@ -22,7 +22,6 @@ MultiEdge::translateToEdges()
 
 	unsigned maxPeriod = std::max(to->period, from->period);
 	unsigned minPeriod = std::min(to->period, from->period);
-	unsigned ratio = maxPeriod / minPeriod;
 
 	if (dependency == Dependency::PRECEDENCE)
 	{
@@ -62,7 +61,7 @@ MultiEdge::translateToEdges()
 		numTo = toNodes.size();
 	}
 
-	for (int m = 0; m < numPermutations; m++)
+	for (unsigned m = 0; m < numPermutations; m++)
 	{
 
 		std::vector<Edge> edgeSet;

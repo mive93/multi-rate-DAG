@@ -4,6 +4,7 @@
  *  Created on: Apr 1, 2019
  *      Author: mirco
  */
+#include <DAG/MaxProduct.h>
 #include "DAG/DAG.h"
 #include <cmath>
 #include <eigen3/Eigen/Core>
@@ -27,7 +28,7 @@ DAG::isCyclic() const
 	Eigen::VectorXi step = Eigen::VectorXi::Zero(n);
 	step[0] = true;
 
-	for (int k = 0; k < n; ++k)
+	for (unsigned k = 0; k < n; ++k)
 	{
 		step = mat * step;
 		if (step.isZero())
@@ -41,25 +42,26 @@ void
 DAG::transitiveReduction()
 {
 	//TODO Problem: Edges that are inserted twice are recognized as transitive and removed!! Fix somehow
-/*
-	std::vector<Edge> newEdges;
+	/*
+	 std::vector<Edge> newEdges;
 
-	int oldNumEdges = edges_.size();
-	for (auto& edge : edges_)
-	{
-		edge.flipEdge();
-		bool transitiveEdge = isCyclic();
-		edge.flipEdge();
-		if (!transitiveEdge)
-			newEdges.push_back(edge);
-	}
-	edges_ = newEdges;
-	int newNumEdges = edges_.size();
-	*/
+	 int oldNumEdges = edges_.size();
+	 for (auto& edge : edges_)
+	 {
+	 edge.flipEdge();
+	 bool transitiveEdge = isCyclic();
+	 edge.flipEdge();
+	 if (!transitiveEdge)
+	 newEdges.push_back(edge);
+	 }
+	 edges_ = newEdges;
+	 int newNumEdges = edges_.size();
+	 */
 
 	DAGMatrix mat = dagMatrix_ - (dagMatrix_ * dagMatrix_ * ancestors_.transpose());
 	convertToBooleanMat(mat);
 	fromDAGMatrix(mat);
+	dagMatrix_ = toDAGMatrix();
 
 }
 
@@ -167,7 +169,7 @@ DAG::toTikz(std::string filename) const
 		else
 		{
 			x += distance;
-			if (node->groupId != cur_groupId)
+			if (static_cast<int>(node->groupId) != cur_groupId)
 			{
 				x = (max_inst->second/2.0 - n_instances[node->groupId]/2.0 +1 )*distance;
 				y -= distance;
@@ -245,7 +247,8 @@ DAG::createMats()
 	fromDAGMatrix(dagMatrix_);
 
 //	descendents_ = dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols());
-	ancestors_ = (dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols())).transpose();
+	ancestors_ =
+			(dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols())).transpose();
 
 	int n = ancestors_.rows();
 
@@ -314,39 +317,68 @@ DAG::getStart() const
 }
 
 DAG::DAG(const DAG& other) :
-		nodes_(other.getNodes()), edges_(other.getEdges()), start_(other.getStart()), end_(
-				other.getEnd()), period_(other.period_), dagMatrix_(other.getDAGMatrix()), ancestors_(other.getAncestors())
+		dagMatrix_(other.getDAGMatrix()), ancestors_(other.getAncestors()), nodes_(
+				other.getNodes()), edges_(other.getEdges()), start_(other.getStart()), end_(
+				other.getEnd()), period_(other.period_)
 {
 }
 
 bool
 DAG::checkLongestChain() const
 {
-	auto mat = toDAGMatrix();
+	/*
+	 std::vector<std::vector<int>> children;
 
-	std::vector<std::vector<int>> children;
+	 for (int k = 0; k < dagMatrix_.cols(); ++k)
+	 {
+	 children.push_back(std::vector<int>());
+	 for (int l = 0; l < dagMatrix_.rows(); ++l)
+	 {
+	 if (dagMatrix_.col(k)[l] == 1)
+	 children[k].push_back(l);
+	 }
+	 }
 
-	for (int k = 0; k < mat.cols(); ++k)
+	 Chain chain;
+	 chain.nodesStack.push_back(0);
+
+	 try
+	 {
+	 chainRecursionWCET(chain, children);
+	 } catch (int&)
+	 {
+	 return false;
+	 }
+
+	 return true;
+	 */
+
+	unsigned n = nodes_.size();
+
+	Eigen::VectorXi v = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXi val = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXi wc = Eigen::VectorXi::Zero(n);
+	v[0] = 1;
+
+	for (unsigned k = 0; k < n; ++k)
+		wc[k] = nodes_[k]->wcet;
+
+	unsigned endIdx = end_->uniqueId;
+
+	for (unsigned k = 0; k < n; ++k)
 	{
-		children.push_back(std::vector<int>());
-		for (int l = 0; l < mat.rows(); ++l)
-		{
-			if (mat.col(k)[l] == 1)
-				children[k].push_back(l);
-		}
+		v = dagMatrix_ * v;
+		convertToBooleanVec(v);
+
+		Eigen::VectorXi temp = wc.array() * v.array();
+		val = maxProduct(dagMatrix_, val) + temp;
+
+		if (val[endIdx] > period_)
+			return false;
+
+		if (v.isZero())
+			break;
 	}
-
-	Chain chain;
-	chain.nodesStack.push_back(0);
-
-	try
-	{
-		chainRecursionWCET(chain, children);
-	} catch (int&)
-	{
-		return false;
-	}
-
 	return true;
 }
 
@@ -372,18 +404,9 @@ DAG::chainRecursionWCET(Chain& chain, const std::vector<std::vector<int> >& chil
 DAG::DAGMatrix
 DAG::getJitterMatrix() const
 {
-	DAGMatrix ret = DAGMatrix::Ones(ancestors_.rows(), ancestors_.cols()) - ancestors_ - ancestors_.transpose();
+	DAGMatrix ret = DAGMatrix::Ones(ancestors_.rows(), ancestors_.cols()) - ancestors_
+			- ancestors_.transpose();
 	convertToBooleanMat(ret);
-//	for (int k = 0; k < ret.cols(); k++)
-//	{
-//		for (int l = 0; l < ret.rows(); l++)
-//		{
-//			if (ret.coeff(l, k) == 0)
-//				ret.coeffRef(l, k) = 1;
-//			else
-//				ret.coeffRef(l, k) = 0;
-//		}
-//	}
 
 	return ret;
 }
@@ -408,14 +431,81 @@ DAG::getGroupMatrix(int N) const
 void
 DAG::convertToBooleanMat(DAGMatrix& mat) const
 {
-	for (int k = 0; k < mat.cols(); k++)
+	mat = (mat.array() > 0).matrix().cast<int>();
+}
+
+void
+DAG::convertToBooleanVec(Eigen::VectorXi& vec) const
+{
+	vec = (vec.array() > 0).matrix().cast<int>();
+}
+
+void
+DAG::createNodeInfo()
+{
+	unsigned n = nodes_.size();
+
+	Eigen::VectorXi v = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXi val = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXi vBackwards = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXi valBackwards = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXi bc = Eigen::VectorXi::Zero(n);
+	v[0] = 1;
+	vBackwards[1] = 1;
+
+	auto back = dagMatrix_.transpose();
+
+	for (unsigned k = 0; k < n; ++k)
+		bc[k] = nodes_[k]->bcet;
+
+	for (unsigned k = 0; k < n; ++k)
 	{
-		for (int l = 0; l < mat.rows(); l++)
-		{
-			if (mat.coeff(l, k) > 0)
-				mat.coeffRef(l, k) = 1;
-			else
-				mat.coeffRef(l, k) = 0;
-		}
+		v = dagMatrix_ * v;
+		vBackwards = back * vBackwards;
+		convertToBooleanVec(v);
+		convertToBooleanVec(vBackwards);
+
+		Eigen::VectorXi temp = bc.array() * v.array();
+		// val = max_cellwise(val, val_after_step)
+		val = (maxProduct(dagMatrix_, val) + temp).array().max(val.array()).matrix();
+
+		Eigen::VectorXi tempBack = bc.array() * vBackwards.array();
+		// val = max_cellwise(val, val_after_step)
+		valBackwards = (maxProduct(back, valBackwards) + tempBack).array().max(valBackwards.array()).matrix();
+
+		if (v.isZero())
+			break;
+	}
+
+	std::cout << val - bc << std::endl << std::endl;
+	std::cout << (period_ - valBackwards.array()) << std::endl;
+
+	for (unsigned k = 0; k < n; ++k)
+	{
+
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -22,6 +22,7 @@ MultiRateTaskset::addTask(unsigned period, unsigned wcet, unsigned deadline,
 	auto mult = std::make_shared<MultiNode>();
 	mult->period = period;
 	mult->wcet = wcet;
+	mult->bcet = wcet;
 	mult->deadline = deadline;
 	mult->id = nodes_.size() + 1; //id 0 is for start
 
@@ -130,29 +131,30 @@ MultiRateTaskset::createDAGs()
 	int brokenDummyChain = 0;
 	int wcetFailure = 0;
 	int jitterFailure = 0;
-	int sameDags = 0;
 
 	std::cout << numPermutations << " Permutations available" << std::endl;
 
 	dags_.clear();
 	for (int k = 0; k < numPermutations; k++)
 	{
+		std::cout << k << "/" << numPermutations;
 		DAG dag(baselineDAG_);
 
 		int tmp = k;
-		for (int i = 0; i < permutation.size(); i++)
+		for (unsigned i = 0; i < permutation.size(); i++)
 		{
 			permutation[i] = tmp / permutSets[i + 1];
 			tmp = tmp % permutSets[i + 1];
 		}
 
-		for (int n = 0; n < edgeSets.size(); n++)
+		for (unsigned n = 0; n < edgeSets.size(); n++)
 		{
 			dag.addEdges(edgeSets[n][permutation[n]]);
 		}
 
 		if (dag.isCyclic())
 		{
+			std::cout << " excluded because it is cyclic" << std::endl;
 			cyclicDags++;
 			continue;
 		}
@@ -162,22 +164,23 @@ MultiRateTaskset::createDAGs()
 		dag.transitiveReduction();
 
 		//Check if Dummy chain was broken, making the DAG not schedulable
-		if (dummyNodes_->brokenDummyChain(dag))
-		{
-			brokenDummyChain++;
-			continue;
-		}
+//		if (dummyNodes_->brokenDummyChain(dag))
+//		{
+//			brokenDummyChain++;
+//			continue;
+//		}
 
 		//Check WCET sum in the chains
 		if (!dag.checkLongestChain())
 		{
+			std::cout << " excluded because longest chain too long" << std::endl;
 			wcetFailure++;
 			continue;
 		}
 
 		if (!checkJitter(dag))
 		{
-			dag.toTikz("incorrect.tex");
+			std::cout << " excluded because jitter incorrect" << std::endl;
 			jitterFailure++;
 			continue;
 		}
@@ -191,6 +194,7 @@ MultiRateTaskset::createDAGs()
 //			}
 //		}
 
+		std::cout << " is fine" << std::endl;
 		dags_.push_back(std::move(dag));
 	}
 
@@ -199,7 +203,6 @@ MultiRateTaskset::createDAGs()
 	std::cout << wcetFailure << " Dags were removed because the chains are too long" << std::endl;
 	std::cout << jitterFailure << " Dags were removed because the parallelism is incorrect"
 			<< std::endl;
-//	std::cout << sameDags << " Dags were removed because they were duplicates" << std::endl;
 	std::cout << dags_.size() << " valid DAGs were created" << std::endl;
 
 	return dags_;
@@ -236,9 +239,9 @@ MultiRateTaskset::checkJitter(const DAG& dag) const
 		if ((float) edge.jitter != jitter)
 		{
 
-			std::cout << "Jitter from " << from << " to " << to << " should be " << edge.jitter
-					<< ", but is " << (float)parMat.coeff(from - 1, to - 1) / normFactor
-					<< " with normFac " << normFactor << std::endl;
+//			std::cout << "Jitter from " << from << " to " << to << " should be " << edge.jitter
+//					<< ", but is " << (float)parMat.coeff(from - 1, to - 1) / normFactor
+//					<< " with normFac " << normFactor << std::endl;
 			correct = false;
 		}
 	}

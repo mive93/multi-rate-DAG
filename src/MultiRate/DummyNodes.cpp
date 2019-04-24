@@ -11,7 +11,7 @@
 #include <map>
 
 void
-DummyNodes::addToDAG(DAG& dag, int hyperperiod)
+DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 {
 	auto dagNodes = dag.getNodes();
 

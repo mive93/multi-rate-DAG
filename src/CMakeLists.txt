@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 2.8)
 project (dags)
 
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -std=c++14 -fPIC -Wall -Wno-int-in-bool-context")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall")
+
 include_directories(${CMAKE_SOURCE_DIR})
 
 set(MULTIRATE_SRCS	MultiRate/MultiNode.cpp
@@ -12,6 +16,7 @@ set(MULTIRATE_SRCS	MultiRate/MultiNode.cpp
 set(DAG_SRCS	DAG/DAG.cpp
 				DAG/Node.cpp
 				DAG/Edge.cpp
+				DAG/MaxProduct.cpp
 				)
 
 add_executable(main main.cpp

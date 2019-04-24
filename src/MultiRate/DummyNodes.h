@@ -17,7 +17,7 @@ struct DummyNodes
 {
 
 	void
-	addToDAG(DAG& dag, int hyperperiod);
+	addToDAG(DAG& dag, unsigned hyperperiod);
 
 	bool
 	brokenDummyChain(const DAG& dag);
