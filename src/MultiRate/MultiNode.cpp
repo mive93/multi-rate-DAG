@@ -11,7 +11,7 @@ MultiNode::createNodes(unsigned hyperPeriod)
 {
 	unsigned numNodes = hyperPeriod / period;
 
-	for (int k = 0; k < numNodes; k++)
+	for (unsigned k = 0; k < numNodes; k++)
 	{
 		auto node = std::make_shared<Node>();
 		node->wcet = wcet;

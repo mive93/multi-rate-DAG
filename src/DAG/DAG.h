@@ -26,8 +26,16 @@ public:
 		std::vector<int> wcetsStack;
 		std::vector<int> nodesStack;
 
-		int wcet = 0;
+		unsigned wcet = 0;
 
+	};
+
+	struct NodeInfo
+	{
+		unsigned earliestArrival;
+		unsigned latestArrival;
+
+		std::shared_ptr<Node> node;
 	};
 
 	using DAGMatrix = Eigen::Matrix<int, -1, -1>;
@@ -119,6 +127,15 @@ public:
 	void
 	createMats();
 
+	void
+	createNodeInfo();
+
+	const std::vector<NodeInfo>&
+	getNodeInfo() const
+	{
+		return nodeInfo_;
+	}
+
 private:
 
 	void
@@ -130,12 +147,15 @@ private:
 	void
 	convertToBooleanMat(DAGMatrix& mat) const;
 
+	void
+	convertToBooleanVec(Eigen::VectorXi& vec) const;
+
 	DAGMatrix dagMatrix_;
-//	DAGMatrix descendents_;
 	DAGMatrix ancestors_;
 
 	std::vector<std::shared_ptr<Node>> nodes_;
 	std::vector<Edge> edges_;
+	std::vector<NodeInfo> nodeInfo_;
 
 	std::shared_ptr<Node> start_;
 	std::shared_ptr<Node> end_;
