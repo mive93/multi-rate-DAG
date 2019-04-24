@@ -127,31 +127,29 @@ DAG::toTikz(std::string filename) const
 	tikz_file.open(filename);
 
 	//beginning the tikz figure
+	tikz_file << "\\documentclass[tikz,border=10pt]{standalone}\n"
+				"\\usepackage{tkz-graph}\n"
+				"\\usetikzlibrary{automata}\n"
+				"\\usetikzlibrary[automata]\n"
+				"\\begin{document}\n";
+
 	tikz_file << "\\begin{tikzpicture}[shorten >=1pt,node distance=3cm,auto,bend angle=45]\n";
 
 	const int distance = 2; //distance between the nodes
-	int x = 0, y = 0; //x and y of the nodes
+	float x = 0, y = 0; //x and y of the nodes
 	int cur_groupId = -1;
-	int max_x = 0;
 
+	std::map<unsigned int,int> n_instances;
+	
 	//figuring out number of rows and columns of the matrix
-	for (auto node : nodes_)
-	{
-		if (node->name != "start" && node->name != "end")
-		{
-			x += distance;
-			if (static_cast<int>(node->groupId) != cur_groupId)
-			{
-				x = distance;
-				y += distance;
-			}
-			cur_groupId = node->groupId;
-			max_x = x > max_x ? x : max_x;
-		}
-	}
+	for (auto node : nodes_)	
+		n_instances[node->groupId]++;
+
+	std::map<unsigned int,int>::iterator max_inst
+        = std::max_element(n_instances.begin(),n_instances.end(),[] (const std::pair<unsigned int,int>& a, const std::pair<unsigned int,int>& b)->bool{ return a.second < b.second; } );
 
 	//actually inserting the nodes
-	y /= 2;
+	y = (n_instances.size() -1) /2;
 	x = 0;
 	cur_groupId = -1;
 
@@ -166,14 +164,14 @@ DAG::toTikz(std::string filename) const
 		else if (node->name == "end")
 		{
 			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << node->shortName
-					<< ") at (" << max_x + distance << ",0) {" << node->shortName << "};\n";
+					<< ") at (" << max_inst->second*distance + distance << ",0) {" << node->shortName << "};\n";
 		}
 		else
 		{
 			x += distance;
 			if (static_cast<int>(node->groupId) != cur_groupId)
 			{
-				x = distance;
+				x = (max_inst->second/2.0 - n_instances[node->groupId]/2.0 +1 )*distance;
 				y -= distance;
 			}
 			cur_groupId = node->groupId;
@@ -196,6 +194,7 @@ DAG::toTikz(std::string filename) const
 
 	//ending tikz figure
 	tikz_file << "\\end{tikzpicture}\n";
+	tikz_file << "\\end{document}\n";
 
 	//close the file
 	tikz_file.close();

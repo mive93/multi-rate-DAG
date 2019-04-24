@@ -9,6 +9,7 @@
 #define DAG_H_
 #include <eigen3/Eigen/Core>
 #include <vector>
+#include <map>
 #include <string>
 #include <fstream>
 
