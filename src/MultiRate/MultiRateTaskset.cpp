@@ -177,8 +177,8 @@ MultiRateTaskset::createDAGs()
 			continue;
 		}
 
-		std::cout << " is fine" << std::endl;
 		dag.createNodeInfo();
+		std::cout << " is fine" << std::endl;
 		dags_.push_back(std::move(dag));
 	}
 

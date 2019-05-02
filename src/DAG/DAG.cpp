@@ -509,8 +509,12 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain)
 		if (groupMat.col(startGroup)[k] == 1)
 			starters.push_back(k);
 
-	unsigned reactionTime = 0;
-	unsigned dataAge = 0;
+
+	LatencyInfo info;
+	info.reactionTime = 0;
+	info.maxLatency = 0;
+	info.minLatency = 0; // Not implemented yet
+
 	for (auto it = starters.begin(); it != starters.end(); it++)
 	{
 		Eigen::VectorXi temp;
@@ -538,8 +542,11 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain)
 
 		unsigned diff = (hpCounter + (first / n)) * period_ + nodeInfo_.lft[first % n]
 				- nodeInfo_.est[*it];
-		if (diff > reactionTime)
-			reactionTime = diff;
+		if (diff > info.reactionTime)
+		{
+			info.reactionTime = diff;
+			info.reactionTimePair = std::make_pair(*it, first % n);
+		}
 
 		temp -= tempNext;
 		convertToBooleanVec(temp);
@@ -552,14 +559,11 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain)
 				break;
 
 		diff = (hpCounter + (last / n)) * period_ + nodeInfo_.lft[last % n] - nodeInfo_.est[*it];
-		if (diff > dataAge)
+		if (diff > info.maxLatency)
 		{
-			dataAge = diff;
+			info.maxLatency = diff;
+			info.maxLatencyPair = std::make_pair(*it, last % n);
 		}
 	}
-	LatencyInfo info;
-	info.reactionTime = reactionTime;
-	info.maxLatency = dataAge;
-	info.minLatency = 0; // Not implemented yet
 	return info;
 }
