@@ -143,13 +143,13 @@ DAG::toTikz(std::string filename) const
 	{
 		if (node->name == "start")
 		{
-			tikz_file << "\\node[state, fill,draw=none,green, text=black] (" << node->shortName
+			tikz_file << "\\node[state, fill,draw=none,green, text=black] (" << node->uniqueId
 					<< ") at (0,0) {" << node->shortName << "};\n";
 			x = distance;
 		}
 		else if (node->name == "end")
 		{
-			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << node->shortName
+			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << node->uniqueId
 					<< ") at (" << max_inst->second * distance + distance << ",0) {"
 					<< node->shortName << "};\n";
 		}
@@ -166,18 +166,18 @@ DAG::toTikz(std::string filename) const
 			cur_groupId = node->groupId;
 
 			if (node->groupId == 666)
-				tikz_file << "\\node[state, fill,draw=none,blue,text=white] (" << node->shortName
-						<< ") at (" << x << "," << y << ") {" << node->uniqueId << "};\n";
+				tikz_file << "\\node[state, fill,draw=none,blue,text=white] (" << node->uniqueId
+						<< ") at (" << x << "," << y << ") {" << node->shortName << "};\n";
 			else
-				tikz_file << "\\node[state] (" << node->shortName << ") at (" << x << "," << y
-						<< ") {$" << node->uniqueId << "$};\n";
+				tikz_file << "\\node[state] (" << node->uniqueId << ") at (" << x << "," << y
+						<< ") {$" << node->shortName << "$};\n";
 		}
 	}
 
 	//inserting edges
 	tikz_file << "\\path[->] \n";
 	for (const auto& edge : edges_)
-		tikz_file << "(" << edge.from->shortName << ") edge node {} (" << edge.to->shortName
+		tikz_file << "(" << edge.from->uniqueId << ") edge node {} (" << edge.to->uniqueId
 				<< ")\n";
 	tikz_file << ";\n";
 

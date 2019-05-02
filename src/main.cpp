@@ -73,7 +73,7 @@ taskset3()
 
 	for (auto& dag : dags)
 	{
-		auto info = dag.getLatencyInfo({0,0,2,3,4});
+		auto info = dag.getLatencyInfo({0,0,3,2,4});
 		if (info.reactionTime < numEdges)
 		{
 			numEdges = info.reactionTime;
@@ -84,7 +84,7 @@ taskset3()
 
 	dags[id].toTikz("prova.tex");
 	std::cout << dags[id].getNodeInfo() << std::endl;
-	std::cout << dags[id].getLatencyInfo({0,0,2,3,4}) << std::endl;
+	std::cout << dags[id].getLatencyInfo({0,0,3,2,4}) << std::endl;
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
