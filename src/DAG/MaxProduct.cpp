@@ -8,7 +8,7 @@
 
 #include "DAG/MaxProduct.h"
 
-Eigen::VectorXi
+Eigen::VectorXi 
 maxProduct(const Eigen::MatrixXi& A, const Eigen::VectorXi& b)
 {
 	return (A.array().rowwise() * b.transpose().array()).rowwise().maxCoeff();

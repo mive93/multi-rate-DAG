@@ -7,6 +7,7 @@
 
 #ifndef DAG_H_
 #define DAG_H_
+#include <Evaluation/LatencyInfo.h>
 #include <eigen3/Eigen/Core>
 #include <vector>
 #include <map>
@@ -22,21 +23,18 @@ class DAG
 {
 public:
 
-	struct Chain
-	{
-		std::vector<int> wcetsStack;
-		std::vector<int> nodesStack;
-
-		unsigned wcet = 0;
-
-	};
-
 	struct NodeInfo
 	{
+		Eigen::VectorXi bc; //Best case execution time
+		Eigen::VectorXi wc; //Worst case execution time
+
 		Eigen::VectorXi est; //Earliest Starting Time
 		Eigen::VectorXi lst; //Latest Starting Time
 		Eigen::VectorXi eft; //Earliest Finishing Time
 		Eigen::VectorXi lft; //Latest Finishing Time
+
+		friend std::ostream &
+		operator <<(std::ostream &out, const NodeInfo &c);
 	};
 
 	using DAGMatrix = Eigen::Matrix<int, -1, -1>;
@@ -80,7 +78,7 @@ public:
 	void
 	printEdges() const;
 
-	void 
+	void
 	toTikz(std::string filename) const;
 
 	const std::shared_ptr<Node>&
@@ -143,13 +141,19 @@ public:
 		return nodeInfo_;
 	}
 
+	const DAGMatrix&
+	getDefinitelySerialized() const
+	{
+		return definitelySerialized_;
+	}
+
+	LatencyInfo
+	getLatencyInfo(std::vector<unsigned> dataChain);
+
 private:
 
 	void
 	createStartEnd();
-
-	void
-	chainRecursionWCET(Chain& chain, const std::vector<std::vector<int>>& children) const;
 
 	void
 	convertToBooleanMat(DAGMatrix& mat) const;
