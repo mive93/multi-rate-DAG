@@ -42,21 +42,21 @@ taskset3()
 	tstart = time(0);
 	MultiRateTaskset taskSet;
 
-	auto task1 = taskSet.addTask(5, 3, "imu");
-	auto task2 = taskSet.addTask(20, 10, "gps");
+	auto task1 = taskSet.addTask(5, 2, "imu");
+	auto task2 = taskSet.addTask(20, 5, "gps");
 	auto task3 = taskSet.addTask(10, 3, "planner");
-	auto task4 = taskSet.addTask(10, 6, "controller");
-//	auto task5 = taskSet.addTask(20, 2, "act");
+	auto task4 = taskSet.addTask(10, 4, "controller");
+	auto task5 = taskSet.addTask(20, 2, "act");
 //	auto task6 = taskSet.addTask(40, 15, "train");
 //	auto task7 = taskSet.addTask(160, 50, "independent");
 
 	taskSet.addPrecedenceEdge(task3, task4);
 
-	taskSet.addDataEdge(task1, task3, 2);
-	taskSet.addDataEdge(task1, task4, 2);
+	taskSet.addDataEdge(task1, task3, 1);
+	taskSet.addDataEdge(task1, task4, 1);
 	taskSet.addDataEdge(task2, task3, 1);
 	taskSet.addDataEdge(task2, task4, 1);
-//	taskSet.addDataEdge(task4, task5, 0);
+	taskSet.addDataEdge(task4, task5, 0);
 //	taskSet.addDataEdge(task1, task6, 6);
 //	taskSet.addDataEdge(task2, task6, 0);
 //
@@ -73,21 +73,20 @@ taskset3()
 
 	for (auto& dag : dags)
 	{
-		//dag.createNodeInfo();
-		if (dag.getEdges().size() < numEdges)
+
+		auto info = dag.getLatencyInfo({1,1,3,4});
+		if (info.reactionTime < numEdges)
 		{
-			numEdges = dag.getEdges().size();
+			numEdges = info.reactionTime;
 			id = k;
 		}
 		k++;
 	}
 
 	dags[id].toTikz("prova.tex");
-	dags[id].createNodeInfo();
-	dags[id].toTikz("prova2.tex");
+	std::cout << dags[id].getLatencyInfo({1,1,3,4}) << std::endl;
 
 
-//	std::cout << dags[id].getJitterMatrix() << std::endl;
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;

@@ -41,26 +41,9 @@ DAG::isCyclic() const
 void
 DAG::transitiveReduction()
 {
-	//TODO Problem: Edges that are inserted twice are recognized as transitive and removed!! Fix somehow
-//	std::vector<Edge> newEdges;
-//
-//	int oldNumEdges = edges_.size();
-//	for (auto& edge : edges_)
-//	{
-//		edge.flipEdge();
-//		bool transitiveEdge = isCyclic();
-//		edge.flipEdge();
-//		if (!transitiveEdge)
-//			newEdges.push_back(edge);
-//	}
-//	edges_ = newEdges;
-//	int newNumEdges = edges_.size();
-
-	DAGMatrix mat = dagMatrix_ - (dagMatrix_ * dagMatrix_ * ancestors_.transpose());
-	convertToBooleanMat(mat);
-	fromDAGMatrix(mat);
-	dagMatrix_ = toDAGMatrix();
-
+	dagMatrix_ = dagMatrix_ - (dagMatrix_ * dagMatrix_ * ancestors_.transpose());
+	convertToBooleanMat(dagMatrix_);
+	fromDAGMatrix(dagMatrix_);
 }
 
 DAG::DAG(unsigned period) :
@@ -226,7 +209,7 @@ DAG::toDAGMatrix() const
 
 	for (const auto& edge : edges_)
 	{
-		mat.col(edge.from->uniqueId)[edge.to->uniqueId] = 1;
+		mat.coeffRef(edge.to->uniqueId, edge.from->uniqueId) = 1;
 	}
 	return mat;
 }
@@ -253,7 +236,6 @@ DAG::createMats()
 	//Delete double edges
 	fromDAGMatrix(dagMatrix_);
 
-//	descendents_ = dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols());
 	ancestors_ =
 			(dagMatrix_ + DAGMatrix::Identity(dagMatrix_.rows(), dagMatrix_.cols())).transpose();
 
@@ -261,9 +243,7 @@ DAG::createMats()
 
 	for (int k = 0; k < std::ceil(std::log2(static_cast<double>(n))); k++)
 	{
-//		descendents_ = descendents_ * descendents_;
 		ancestors_ = ancestors_ * ancestors_;
-//		convertToBooleanMat(descendents_);
 		convertToBooleanMat(ancestors_);
 	}
 
@@ -324,8 +304,9 @@ DAG::getStart() const
 }
 
 DAG::DAG(const DAG& other) :
-		dagMatrix_(other.getDAGMatrix()), ancestors_(other.getAncestors()), nodes_(
-				other.getNodes()), edges_(other.getEdges()), start_(other.getStart()), end_(
+		dagMatrix_(other.getDAGMatrix()), ancestors_(other.getAncestors()), definitelySerialized_(
+				other.getDefinitelySerialized()), nodes_(other.getNodes()), edges_(
+				other.getEdges()), nodeInfo_(other.nodeInfo_), start_(other.getStart()), end_(
 				other.getEnd()), period_(other.period_)
 {
 }
@@ -333,33 +314,6 @@ DAG::DAG(const DAG& other) :
 bool
 DAG::checkLongestChain() const
 {
-	/*
-	 std::vector<std::vector<int>> children;
-
-	 for (int k = 0; k < dagMatrix_.cols(); ++k)
-	 {
-	 children.push_back(std::vector<int>());
-	 for (int l = 0; l < dagMatrix_.rows(); ++l)
-	 {
-	 if (dagMatrix_.col(k)[l] == 1)
-	 children[k].push_back(l);
-	 }
-	 }
-
-	 Chain chain;
-	 chain.nodesStack.push_back(0);
-
-	 try
-	 {
-	 chainRecursionWCET(chain, children);
-	 } catch (int&)
-	 {
-	 return false;
-	 }
-
-	 return true;
-	 */
-
 	unsigned n = nodes_.size();
 
 	Eigen::VectorXi v = Eigen::VectorXi::Zero(n);
@@ -389,25 +343,6 @@ DAG::checkLongestChain() const
 	return true;
 }
 
-void
-DAG::chainRecursionWCET(Chain& chain, const std::vector<std::vector<int> >& children) const
-{
-	auto node = chain.nodesStack.back();
-	for (auto child : children[node])
-	{
-		chain.nodesStack.push_back(child);
-		chain.wcetsStack.push_back(nodes_[child]->wcet);
-		chain.wcet += chain.wcetsStack.back();
-		if (chain.wcet > period_)
-			throw(int(1));
-		chainRecursionWCET(chain, children);
-	}
-
-	chain.wcet -= chain.wcetsStack.back();
-	chain.wcetsStack.pop_back();
-	chain.nodesStack.pop_back();
-}
-
 DAG::DAGMatrix
 DAG::getJitterMatrix() const
 {
@@ -428,6 +363,8 @@ DAG::getGroupMatrix(int N) const
 	{
 		int k = node->groupId;
 		if (k == 0 || k == 666 || k == 667) //Start and end
+			continue;
+		if (k > N) // ignore nodes with higher group id
 			continue;
 		mat.coeffRef(node->uniqueId, k - 1) = 1;
 	}
@@ -456,8 +393,8 @@ DAG::createNodeInfo()
 	Eigen::VectorXi val = Eigen::VectorXi::Zero(n);
 	Eigen::VectorXi vBackwards = Eigen::VectorXi::Zero(n);
 	Eigen::VectorXi valBackwards = Eigen::VectorXi::Zero(n);
-	Eigen::VectorXi bc = Eigen::VectorXi::Zero(n);
-	Eigen::VectorXi wc = Eigen::VectorXi::Zero(n);
+	nodeInfo_.bc = Eigen::VectorXi::Zero(n);
+	nodeInfo_.wc = Eigen::VectorXi::Zero(n);
 	v[0] = 1;
 	vBackwards[1] = 1;
 
@@ -465,8 +402,8 @@ DAG::createNodeInfo()
 
 	for (unsigned k = 0; k < n; ++k)
 	{
-		bc[k] = nodes_[k]->bcet;
-		wc[k] = nodes_[k]->wcet;
+		nodeInfo_.bc[k] = nodes_[k]->bcet;
+		nodeInfo_.wc[k] = nodes_[k]->wcet;
 	}
 
 	for (unsigned k = 0; k < n; ++k)
@@ -476,11 +413,11 @@ DAG::createNodeInfo()
 		convertToBooleanVec(v);
 		convertToBooleanVec(vBackwards);
 
-		Eigen::VectorXi temp = bc.array() * v.array();
+		Eigen::VectorXi temp = nodeInfo_.bc.array() * v.array();
 		// val = max_cellwise(val, val_after_step)
 		val = (maxProduct(dagMatrix_, val) + temp).array().max(val.array()).matrix();
 
-		Eigen::VectorXi tempBack = wc.array() * vBackwards.array();
+		Eigen::VectorXi tempBack = nodeInfo_.wc.array() * vBackwards.array();
 		// val = max_cellwise(val, val_after_step)
 		valBackwards =
 				(maxProduct(back, valBackwards) + tempBack).array().max(valBackwards.array()).matrix();
@@ -489,19 +426,10 @@ DAG::createNodeInfo()
 			break;
 	}
 
-	nodeInfo_.est = val - bc;
-	nodeInfo_.lst= (period_ - valBackwards.array()).matrix();
-	nodeInfo_.eft= nodeInfo_.est + bc;
-	nodeInfo_.lft= nodeInfo_.lst + wc;
-
-	std::cout << "BC: " << bc.transpose() << std::endl;
-	std::cout << "WC: " << wc.transpose() << std::endl << std::endl;
-
-	std::cout << "EST: " << nodeInfo_.est.transpose() << std::endl;
-	std::cout << "LST: " << nodeInfo_.lst.transpose() << std::endl;
-	std::cout << "EFT: " << nodeInfo_.eft.transpose() << std::endl;
-	std::cout << "LFT: " << nodeInfo_.lft.transpose() << std::endl;
-
+	nodeInfo_.est = val - nodeInfo_.bc;
+	nodeInfo_.lst = (period_ - valBackwards.array()).matrix();
+	nodeInfo_.eft = nodeInfo_.est + nodeInfo_.bc;
+	nodeInfo_.lft = nodeInfo_.lst + nodeInfo_.wc;
 
 	definitelySerialized_ = ancestors_.transpose() - DAGMatrix::Identity(n, n);
 
@@ -514,27 +442,48 @@ DAG::createNodeInfo()
 		}
 	}
 
-	fromDAGMatrix(definitelySerialized_ - DAGMatrix::Identity(n, n));
-	createMats();
-	transitiveReduction();
+}
 
-	if (!checkLongestChain())
-		std::cout << "AHHHHHHHh shit" << std::endl;
-	return;
+std::ostream &
+operator <<(std::ostream &out, const DAG::NodeInfo &info)
+{
+	out << "BC: " << info.bc.transpose() << std::endl;
+	out << "WC: " << info.wc.transpose() << std::endl << std::endl;
 
-	auto groupMat = getGroupMatrix(6);
+	out << "EST: " << info.est.transpose() << std::endl;
+	out << "LST: " << info.lst.transpose() << std::endl;
+	out << "EFT: " << info.eft.transpose() << std::endl;
+	out << "LFT: " << info.lft.transpose() << std::endl;
+	return out;
+}
+
+LatencyInfo
+DAG::getLatencyInfo(std::vector<unsigned> dataChain)
+{
+	unsigned n = nodes_.size();
+
+	unsigned maxGroup = 0;
+	for (const auto& g : dataChain)
+		if (g > maxGroup)
+			maxGroup = g;
+
+	unsigned startGroup = dataChain.front();
+	unsigned endGroup = dataChain.back();
+
+	std::vector<unsigned> groupChain(std::next(dataChain.begin()), std::prev(dataChain.end()));
+
+	auto groupMat = getGroupMatrix(maxGroup + 1);
 
 	DAGMatrix A = definitelySerialized_;
 	DAGMatrix B = DAGMatrix::Ones(n, n);
+	DAGMatrix C = DAGMatrix::Ones(n, n);
 
-	std::vector<int> groupChain = { 0, 2, 3 };
 	unsigned hpCounter = 0;
 
 	for (auto g : groupChain)
 	{
 		auto diag = groupMat.col(g).asDiagonal();
 		DAGMatrix Anew = definitelySerialized_ * diag * A;
-
 		if (Anew.isZero())
 		{
 			A = B;
@@ -548,39 +497,17 @@ DAG::createNodeInfo()
 		convertToBooleanMat(B);
 	}
 
-	DAGMatrix C = DAGMatrix::Ones(n, n);
-//	B = B - A;
-
-	unsigned startGroup = 0;
-	unsigned endGroup = 1;
-
 	A = groupMat.col(endGroup).asDiagonal() * A;
 	B = groupMat.col(endGroup).asDiagonal() * B;
 	C = groupMat.col(endGroup).asDiagonal() * C;
 
+	convertToBooleanMat(A);
+	convertToBooleanMat(B);
+	convertToBooleanMat(C);
 	std::vector<unsigned> starters;
 	for (unsigned k = 0; k < n; k++)
 		if (groupMat.col(startGroup)[k] == 1)
 			starters.push_back(k);
-
-//	for (auto it = starters.begin(); it != starters.end(); it++)
-//	{
-//		auto next = std::next(it);
-//		if (next == starters.end())
-//		{
-//			B.col(*it) -= Aold.col(starters.front());
-//			C.col(*it) -= Bold.col(starters.front());
-//			break;
-//		}
-//
-//		A.col(*it) -= Aold.col(*next);
-//		B.col(*it) -= Bold.col(*next);
-//		C.col(*it) -= Cold.col(*next);
-//
-//	}
-	convertToBooleanMat(A);
-	convertToBooleanMat(B);
-	convertToBooleanMat(C);
 
 	unsigned reactionTime = 0;
 	unsigned dataAge = 0;
@@ -609,7 +536,8 @@ DAG::createNodeInfo()
 			if (temp[first] == 1)
 				break;
 
-		unsigned diff = (hpCounter + (first / n)) * period_ + nodeInfo_.lft[first % n] - nodeInfo_.est[*it];
+		unsigned diff = (hpCounter + (first / n)) * period_ + nodeInfo_.lft[first % n]
+				- nodeInfo_.est[*it];
 		if (diff > reactionTime)
 			reactionTime = diff;
 
@@ -629,8 +557,9 @@ DAG::createNodeInfo()
 			dataAge = diff;
 		}
 	}
-
-	std::cout << reactionTime << std::endl;
-	std::cout << dataAge << std::endl << std::endl;
+	LatencyInfo info;
+	info.reactionTime = reactionTime;
+	info.maxLatency = dataAge;
+	info.minLatency = 0; // Not implemented yet
+	return info;
 }
-

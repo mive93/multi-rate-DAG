@@ -128,7 +128,6 @@ MultiRateTaskset::createDAGs()
 	}
 
 	int cyclicDags = 0;
-	int brokenDummyChain = 0;
 	int wcetFailure = 0;
 	int jitterFailure = 0;
 
@@ -160,15 +159,8 @@ MultiRateTaskset::createDAGs()
 		}
 
 		dag.createMats();
-
 		dag.transitiveReduction();
 
-		//Check if Dummy chain was broken, making the DAG not schedulable
-//		if (dummyNodes_->brokenDummyChain(dag))
-//		{
-//			brokenDummyChain++;
-//			continue;
-//		}
 
 		//Check WCET sum in the chains
 		if (!dag.checkLongestChain())
@@ -185,21 +177,12 @@ MultiRateTaskset::createDAGs()
 			continue;
 		}
 
-//		for (const auto& other : dags_)
-//		{
-//			if ((other.toDAGMatrix() - dag.toDAGMatrix()).isZero())
-//			{
-//				sameDags++;
-//				continue;
-//			}
-//		}
-
 		std::cout << " is fine" << std::endl;
+		dag.createNodeInfo();
 		dags_.push_back(std::move(dag));
 	}
 
 	std::cout << cyclicDags << " cyclic Dags were excluded" << std::endl;
-	std::cout << brokenDummyChain << " Dags were excluded due to broken Dummy Chain" << std::endl;
 	std::cout << wcetFailure << " Dags were removed because the chains are too long" << std::endl;
 	std::cout << jitterFailure << " Dags were removed because the parallelism is incorrect"
 			<< std::endl;
