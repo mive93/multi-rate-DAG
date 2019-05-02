@@ -119,6 +119,12 @@ public:
 		return dagMatrix_;
 	}
 
+	unsigned
+	getPeriod() const
+	{
+		return period_;
+	}
+
 //	const DAGMatrix&
 //	getDescendents() const
 //	{

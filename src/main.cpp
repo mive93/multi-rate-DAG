@@ -13,6 +13,8 @@
 #include <set>
 
 #include "MultiRate/DummyNodes.h"
+
+#include "Evaluation/Scheduling.h"
 void
 taskset1()
 {
@@ -82,6 +84,8 @@ taskset3()
 		k++;
 	}
 
+
+
 	dags[id].toTikz("prova.tex");
 	dags[id].createNodeInfo();
 	dags[id].toTikz("prova2.tex");
@@ -91,6 +95,9 @@ taskset3()
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
+
+
+	scheduleDAG(dags[id],2);
 
 	return 0;
 
