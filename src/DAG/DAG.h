@@ -33,10 +33,10 @@ public:
 
 	struct NodeInfo
 	{
-		unsigned earliestArrival;
-		unsigned latestArrival;
-
-		std::shared_ptr<Node> node;
+		Eigen::VectorXi est; //Earliest Starting Time
+		Eigen::VectorXi lst; //Latest Starting Time
+		Eigen::VectorXi eft; //Earliest Finishing Time
+		Eigen::VectorXi lft; //Latest Finishing Time
 	};
 
 	using DAGMatrix = Eigen::Matrix<int, -1, -1>;
@@ -131,7 +131,7 @@ public:
 	void
 	createNodeInfo();
 
-	const std::vector<NodeInfo>&
+	const NodeInfo&
 	getNodeInfo() const
 	{
 		return nodeInfo_;
@@ -153,10 +153,11 @@ private:
 
 	DAGMatrix dagMatrix_;
 	DAGMatrix ancestors_;
+	DAGMatrix definitelySerialized_;
 
 	std::vector<std::shared_ptr<Node>> nodes_;
 	std::vector<Edge> edges_;
-	std::vector<NodeInfo> nodeInfo_;
+	NodeInfo nodeInfo_;
 
 	std::shared_ptr<Node> start_;
 	std::shared_ptr<Node> end_;

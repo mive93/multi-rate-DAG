@@ -11,14 +11,7 @@
 Eigen::VectorXi
 maxProduct(const Eigen::MatrixXi& A, const Eigen::VectorXi& b)
 {
-	unsigned n = A.rows();
-	Eigen::VectorXi res = Eigen::VectorXi::Zero(n, 1);
-
-	for (unsigned k = 0; k < n; ++k)
-	{
-		res[k] = maxProductVector(A.row(k), b);
-	}
-	return res;
+	return (A.array().rowwise() * b.transpose().array()).rowwise().maxCoeff();
 }
 
 int

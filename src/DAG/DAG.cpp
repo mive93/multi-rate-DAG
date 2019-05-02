@@ -42,21 +42,19 @@ void
 DAG::transitiveReduction()
 {
 	//TODO Problem: Edges that are inserted twice are recognized as transitive and removed!! Fix somehow
-	/*
-	 std::vector<Edge> newEdges;
-
-	 int oldNumEdges = edges_.size();
-	 for (auto& edge : edges_)
-	 {
-	 edge.flipEdge();
-	 bool transitiveEdge = isCyclic();
-	 edge.flipEdge();
-	 if (!transitiveEdge)
-	 newEdges.push_back(edge);
-	 }
-	 edges_ = newEdges;
-	 int newNumEdges = edges_.size();
-	 */
+//	std::vector<Edge> newEdges;
+//
+//	int oldNumEdges = edges_.size();
+//	for (auto& edge : edges_)
+//	{
+//		edge.flipEdge();
+//		bool transitiveEdge = isCyclic();
+//		edge.flipEdge();
+//		if (!transitiveEdge)
+//			newEdges.push_back(edge);
+//	}
+//	edges_ = newEdges;
+//	int newNumEdges = edges_.size();
 
 	DAGMatrix mat = dagMatrix_ - (dagMatrix_ * dagMatrix_ * ancestors_.transpose());
 	convertToBooleanMat(mat);
@@ -128,10 +126,10 @@ DAG::toTikz(std::string filename) const
 
 	//beginning the tikz figure
 	tikz_file << "\\documentclass[tikz,border=10pt]{standalone}\n"
-				"\\usepackage{tkz-graph}\n"
-				"\\usetikzlibrary{automata}\n"
-				"\\usetikzlibrary[automata]\n"
-				"\\begin{document}\n";
+			"\\usepackage{tkz-graph}\n"
+			"\\usetikzlibrary{automata}\n"
+			"\\usetikzlibrary[automata]\n"
+			"\\begin{document}\n";
 
 	tikz_file << "\\begin{tikzpicture}[shorten >=1pt,node distance=3cm,auto,bend angle=45]\n";
 
@@ -139,21 +137,23 @@ DAG::toTikz(std::string filename) const
 	float x = 0, y = 0; //x and y of the nodes
 	int cur_groupId = -1;
 
-	std::map<unsigned int,int> n_instances;
-	
+	std::map<unsigned int, int> n_instances;
+
 	//figuring out number of rows and columns of the matrix
-	for (auto node : nodes_)	
+	for (auto node : nodes_)
 		n_instances[node->groupId]++;
 
-	std::map<unsigned int,int>::iterator max_inst
-        = std::max_element(n_instances.begin(),n_instances.end(),[] (const std::pair<unsigned int,int>& a, const std::pair<unsigned int,int>& b)->bool{ return a.second < b.second; } );
+	std::map<unsigned int, int>::iterator max_inst =
+			std::max_element(n_instances.begin(), n_instances.end(),
+					[] (const std::pair<unsigned int,int>& a, const std::pair<unsigned int,int>& b)->bool
+					{	return a.second < b.second;});
 
 	//actually inserting the nodes
-	y = n_instances.size()/2*distance;
+	y = n_instances.size() / 2 * distance;
 	x = 0;
 	cur_groupId = -1;
 
-	float l_max = distance*(max_inst->second+1);
+	float l_max = distance * (max_inst->second + 1);
 	float cur_distance;
 
 	for (auto node : nodes_)
@@ -167,26 +167,27 @@ DAG::toTikz(std::string filename) const
 		else if (node->name == "end")
 		{
 			tikz_file << "\\node[state, fill,draw=none,red,text=black](" << node->shortName
-					<< ") at (" << max_inst->second*distance + distance << ",0) {" << node->shortName << "};\n";
+					<< ") at (" << max_inst->second * distance + distance << ",0) {"
+					<< node->shortName << "};\n";
 		}
 		else
 		{
-			
+
 			x += cur_distance;
 			if (static_cast<int>(node->groupId) != cur_groupId)
 			{
-				cur_distance = l_max/(n_instances[node->groupId]+1);
-				x = cur_distance;
+				cur_distance = l_max / (n_instances[node->groupId]);
+				x = cur_distance / 2;
 				y -= distance;
 			}
 			cur_groupId = node->groupId;
 
 			if (node->groupId == 666)
 				tikz_file << "\\node[state, fill,draw=none,blue,text=white] (" << node->shortName
-						<< ") at (" << x << "," << y << ") {" << node->shortName << "};\n";
+						<< ") at (" << x << "," << y << ") {" << node->uniqueId << "};\n";
 			else
 				tikz_file << "\\node[state] (" << node->shortName << ") at (" << x << "," << y
-						<< ") {$" << node->shortName << "$};\n";
+						<< ") {$" << node->uniqueId << "$};\n";
 		}
 	}
 
@@ -242,6 +243,7 @@ DAG::fromDAGMatrix(const DAGMatrix& mat)
 				edges_.push_back(Edge(nodes_.at(k), nodes_.at(l)));
 		}
 	}
+	dagMatrix_ = mat;
 }
 
 void
@@ -455,13 +457,17 @@ DAG::createNodeInfo()
 	Eigen::VectorXi vBackwards = Eigen::VectorXi::Zero(n);
 	Eigen::VectorXi valBackwards = Eigen::VectorXi::Zero(n);
 	Eigen::VectorXi bc = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXi wc = Eigen::VectorXi::Zero(n);
 	v[0] = 1;
 	vBackwards[1] = 1;
 
 	auto back = dagMatrix_.transpose();
 
 	for (unsigned k = 0; k < n; ++k)
+	{
 		bc[k] = nodes_[k]->bcet;
+		wc[k] = nodes_[k]->wcet;
+	}
 
 	for (unsigned k = 0; k < n; ++k)
 	{
@@ -474,43 +480,166 @@ DAG::createNodeInfo()
 		// val = max_cellwise(val, val_after_step)
 		val = (maxProduct(dagMatrix_, val) + temp).array().max(val.array()).matrix();
 
-		Eigen::VectorXi tempBack = bc.array() * vBackwards.array();
+		Eigen::VectorXi tempBack = wc.array() * vBackwards.array();
 		// val = max_cellwise(val, val_after_step)
-		valBackwards = (maxProduct(back, valBackwards) + tempBack).array().max(valBackwards.array()).matrix();
+		valBackwards =
+				(maxProduct(back, valBackwards) + tempBack).array().max(valBackwards.array()).matrix();
 
 		if (v.isZero())
 			break;
 	}
 
-	std::cout << val - bc << std::endl << std::endl;
-	std::cout << (period_ - valBackwards.array()) << std::endl;
+	auto est = val - bc;
+	auto lst = (period_ - valBackwards.array()).matrix();
+	auto eft = est + bc;
+	auto lft = lst + wc;
 
-	for (unsigned k = 0; k < n; ++k)
+	std::cout << "BC: " << bc.transpose() << std::endl;
+	std::cout << "WC: " << wc.transpose() << std::endl << std::endl;
+
+	std::cout << "EST: " << est.transpose() << std::endl;
+	std::cout << "LST: " << lst.transpose() << std::endl;
+	std::cout << "EFT: " << eft.transpose() << std::endl;
+	std::cout << "LFT: " << lft.transpose() << std::endl;
+
+	for (unsigned k = 0; k < n; k++)
 	{
-
+		nodeInfo_.push_back(NodeInfo());
+		nodeInfo_.back().node = nodes_[k];
+		nodeInfo_.back().est = est[k];
+		nodeInfo_.back().lst = lst[k];
+		nodeInfo_.back().eft = eft[k];
+		nodeInfo_.back().lft = lft[k];
 	}
+
+	definitelySerialized_ = ancestors_.transpose() - DAGMatrix::Identity(n, n);
+
+	for (unsigned k = 0; k < n; k++)
+	{
+		for (unsigned l = 0; l < n; l++)
+		{
+			if (est[k] >= lft[l])
+				definitelySerialized_.coeffRef(k, l) = 1;
+		}
+	}
+
+	fromDAGMatrix(definitelySerialized_ - DAGMatrix::Identity(n, n));
+	createMats();
+	transitiveReduction();
+
+	if (!checkLongestChain())
+		std::cout << "AHHHHHHHh shit" << std::endl;
+	return;
+
+	auto groupMat = getGroupMatrix(6);
+
+	DAGMatrix A = definitelySerialized_;
+	DAGMatrix B = DAGMatrix::Ones(n, n);
+
+	std::vector<int> groupChain = { 0, 2, 3 };
+	unsigned hpCounter = 0;
+
+	for (auto g : groupChain)
+	{
+		auto diag = groupMat.col(g).asDiagonal();
+		DAGMatrix Anew = definitelySerialized_ * diag * A;
+
+		if (Anew.isZero())
+		{
+			A = B;
+			B = DAGMatrix::Ones(n, n);
+			Anew = definitelySerialized_ * diag * A;
+			hpCounter++;
+		}
+		B = DAGMatrix::Ones(n, n) * diag * A + definitelySerialized_ * diag * B;
+		A = Anew;
+		convertToBooleanMat(A);
+		convertToBooleanMat(B);
+	}
+
+	DAGMatrix C = DAGMatrix::Ones(n, n);
+//	B = B - A;
+
+	unsigned startGroup = 0;
+	unsigned endGroup = 1;
+
+	A = groupMat.col(endGroup).asDiagonal() * A;
+	B = groupMat.col(endGroup).asDiagonal() * B;
+	C = groupMat.col(endGroup).asDiagonal() * C;
+
+	std::vector<unsigned> starters;
+	for (unsigned k = 0; k < n; k++)
+		if (groupMat.col(startGroup)[k] == 1)
+			starters.push_back(k);
+
+//	for (auto it = starters.begin(); it != starters.end(); it++)
+//	{
+//		auto next = std::next(it);
+//		if (next == starters.end())
+//		{
+//			B.col(*it) -= Aold.col(starters.front());
+//			C.col(*it) -= Bold.col(starters.front());
+//			break;
+//		}
+//
+//		A.col(*it) -= Aold.col(*next);
+//		B.col(*it) -= Bold.col(*next);
+//		C.col(*it) -= Cold.col(*next);
+//
+//	}
+	convertToBooleanMat(A);
+	convertToBooleanMat(B);
+	convertToBooleanMat(C);
+
+	unsigned reactionTime = 0;
+	unsigned dataAge = 0;
+	for (auto it = starters.begin(); it != starters.end(); it++)
+	{
+		Eigen::VectorXi temp;
+		temp.resize(3 * n);
+		temp << A.col(*it), B.col(*it), C.col(*it);
+
+		Eigen::VectorXi tempNext;
+		tempNext.resize(3 * n);
+
+		auto next = std::next(it);
+		if (next == starters.end())
+		{
+			tempNext << Eigen::VectorXi::Zero(n, 1), A.col(starters.front()), B.col(
+					starters.front());
+		}
+		else
+		{
+			tempNext << A.col(*next), B.col(*next), C.col(*next);
+		}
+
+		unsigned first = 0;
+		for (; first < 3 * n; first++)
+			if (temp[first] == 1)
+				break;
+
+		unsigned diff = (hpCounter + (first / n)) * period_ + lft[first % n] - est[*it];
+		if (diff > reactionTime)
+			reactionTime = diff;
+
+		temp -= tempNext;
+		convertToBooleanVec(temp);
+		if (temp.isZero())
+			continue;
+
+		unsigned last = 3 * n - 1;
+		for (; last >= 0; last--)
+			if (temp[last] == 1)
+				break;
+
+		diff = (hpCounter + (last / n)) * period_ + lft[last % n] - est[*it];
+		if (diff > dataAge)
+		{
+			dataAge = diff;
+		}
+	}
+
+	std::cout << reactionTime << std::endl;
+	std::cout << dataAge << std::endl << std::endl;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

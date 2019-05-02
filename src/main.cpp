@@ -42,23 +42,24 @@ taskset3()
 	tstart = time(0);
 	MultiRateTaskset taskSet;
 
-	auto task1 = taskSet.addTask(5, 2, "imu");
-	auto task2 = taskSet.addTask(20, 4, "gps");
+	auto task1 = taskSet.addTask(5, 3, "imu");
+	auto task2 = taskSet.addTask(20, 10, "gps");
 	auto task3 = taskSet.addTask(10, 3, "planner");
-	auto task4 = taskSet.addTask(10, 3, "controller");
-	auto task5 = taskSet.addTask(20, 2, "act");
-//	auto task6 = taskSet.addTask(40, 25, "train");
+	auto task4 = taskSet.addTask(10, 6, "controller");
+//	auto task5 = taskSet.addTask(20, 2, "act");
+//	auto task6 = taskSet.addTask(40, 15, "train");
+//	auto task7 = taskSet.addTask(160, 50, "independent");
 
 	taskSet.addPrecedenceEdge(task3, task4);
 
-	taskSet.addDataEdge(task1, task3, 0);
-	taskSet.addDataEdge(task1, task4, 0);
-	taskSet.addDataEdge(task2, task3, 0);
-	taskSet.addDataEdge(task2, task4, 0);
-	taskSet.addDataEdge(task4, task5, 0);
+	taskSet.addDataEdge(task1, task3, 2);
+	taskSet.addDataEdge(task1, task4, 2);
+	taskSet.addDataEdge(task2, task3, 1);
+	taskSet.addDataEdge(task2, task4, 1);
+//	taskSet.addDataEdge(task4, task5, 0);
 //	taskSet.addDataEdge(task1, task6, 6);
-//	taskSet.addDataEdge(task2, task6, 1);
-
+//	taskSet.addDataEdge(task2, task6, 0);
+//
 	taskSet.createBaselineDAG();
 
 	auto dags = taskSet.createDAGs();
@@ -70,8 +71,9 @@ taskset3()
 	unsigned id = 0;
 	unsigned k = 0;
 
-	for (const auto& dag : dags)
+	for (auto& dag : dags)
 	{
+		//dag.createNodeInfo();
 		if (dag.getEdges().size() < numEdges)
 		{
 			numEdges = dag.getEdges().size();
@@ -81,8 +83,11 @@ taskset3()
 	}
 
 	dags[id].toTikz("prova.tex");
-
 	dags[id].createNodeInfo();
+	dags[id].toTikz("prova2.tex");
+
+
+//	std::cout << dags[id].getJitterMatrix() << std::endl;
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -117,15 +122,13 @@ int
 main()
 {
 	return taskset3();
-
+//
 //	Eigen::Matrix<int, 5, 1> v1;
-//	Eigen::Matrix<int, 5, 1> v2;
+//	Eigen::Matrix<int, 5, 5> v2 = Eigen::Matrix<int, 5, 5>::Random();
 //
-//	v1 << 1,2,3,4,5;
-//	v2 << 2,3,1,3,6;
+//	v1 << 0,0,1,1,0;
 //
-//	auto val = v1.array().max(v2.array());
-//	std::cout << val << std::endl;
+//	std::cout << v1.asDiagonal() * v2 << std::endl;
 
 
 }
