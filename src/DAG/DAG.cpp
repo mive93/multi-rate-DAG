@@ -380,7 +380,7 @@ DAG::checkLongestChain() const
 		Eigen::VectorXi temp = wc.array() * v.array();
 		val = maxProduct(dagMatrix_, val) + temp;
 
-		if (val[endIdx] > period_)
+		if (val[endIdx] > static_cast<int>(period_))
 			return false;
 
 		if (v.isZero())
@@ -489,28 +489,19 @@ DAG::createNodeInfo()
 			break;
 	}
 
-	auto est = val - bc;
-	auto lst = (period_ - valBackwards.array()).matrix();
-	auto eft = est + bc;
-	auto lft = lst + wc;
+	nodeInfo_.est = val - bc;
+	nodeInfo_.lst= (period_ - valBackwards.array()).matrix();
+	nodeInfo_.eft= nodeInfo_.est + bc;
+	nodeInfo_.lft= nodeInfo_.lst + wc;
 
 	std::cout << "BC: " << bc.transpose() << std::endl;
 	std::cout << "WC: " << wc.transpose() << std::endl << std::endl;
 
-	std::cout << "EST: " << est.transpose() << std::endl;
-	std::cout << "LST: " << lst.transpose() << std::endl;
-	std::cout << "EFT: " << eft.transpose() << std::endl;
-	std::cout << "LFT: " << lft.transpose() << std::endl;
+	std::cout << "EST: " << nodeInfo_.est.transpose() << std::endl;
+	std::cout << "LST: " << nodeInfo_.lst.transpose() << std::endl;
+	std::cout << "EFT: " << nodeInfo_.eft.transpose() << std::endl;
+	std::cout << "LFT: " << nodeInfo_.lft.transpose() << std::endl;
 
-	for (unsigned k = 0; k < n; k++)
-	{
-		nodeInfo_.push_back(NodeInfo());
-		nodeInfo_.back().node = nodes_[k];
-		nodeInfo_.back().est = est[k];
-		nodeInfo_.back().lst = lst[k];
-		nodeInfo_.back().eft = eft[k];
-		nodeInfo_.back().lft = lft[k];
-	}
 
 	definitelySerialized_ = ancestors_.transpose() - DAGMatrix::Identity(n, n);
 
@@ -518,7 +509,7 @@ DAG::createNodeInfo()
 	{
 		for (unsigned l = 0; l < n; l++)
 		{
-			if (est[k] >= lft[l])
+			if (nodeInfo_.est[k] >= nodeInfo_.lft[l])
 				definitelySerialized_.coeffRef(k, l) = 1;
 		}
 	}
@@ -618,7 +609,7 @@ DAG::createNodeInfo()
 			if (temp[first] == 1)
 				break;
 
-		unsigned diff = (hpCounter + (first / n)) * period_ + lft[first % n] - est[*it];
+		unsigned diff = (hpCounter + (first / n)) * period_ + nodeInfo_.lft[first % n] - nodeInfo_.est[*it];
 		if (diff > reactionTime)
 			reactionTime = diff;
 
@@ -632,7 +623,7 @@ DAG::createNodeInfo()
 			if (temp[last] == 1)
 				break;
 
-		diff = (hpCounter + (last / n)) * period_ + lft[last % n] - est[*it];
+		diff = (hpCounter + (last / n)) * period_ + nodeInfo_.lft[last % n] - nodeInfo_.est[*it];
 		if (diff > dataAge)
 		{
 			dataAge = diff;
