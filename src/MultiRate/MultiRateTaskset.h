@@ -22,6 +22,10 @@ public:
 
 	MultiRateTaskset();
 
+
+	void
+	toTikz(std::string filename) const;
+
 	std::shared_ptr<MultiNode>
 	addTask(unsigned period, unsigned wcet, unsigned deadline, const std::string& name = std::string());
 
