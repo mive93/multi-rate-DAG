@@ -16,10 +16,10 @@
 struct MultiNode
 {
 //	unsigned offset;
-	unsigned deadline;
+	float deadline;
 	unsigned period;
-	unsigned wcet;
-	unsigned bcet;
+	float wcet;
+	float bcet;
 
 	unsigned id;
 

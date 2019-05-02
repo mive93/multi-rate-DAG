@@ -16,7 +16,7 @@ MultiRateTaskset::MultiRateTaskset() :
 }
 
 std::shared_ptr<MultiNode>
-MultiRateTaskset::addTask(unsigned period, unsigned wcet, unsigned deadline,
+MultiRateTaskset::addTask(unsigned period, float wcet, float deadline,
 		const std::string& name)
 {
 	auto mult = std::make_shared<MultiNode>();
@@ -40,7 +40,7 @@ MultiRateTaskset::addTask(unsigned period, unsigned wcet, unsigned deadline,
 }
 
 std::shared_ptr<MultiNode>
-MultiRateTaskset::addTask(unsigned period, unsigned wcet, const std::string& name)
+MultiRateTaskset::addTask(unsigned period, float wcet, const std::string& name)
 {
 	return addTask(period, wcet, period, name);
 }

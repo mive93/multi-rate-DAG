@@ -317,8 +317,8 @@ DAG::checkLongestChain() const
 	unsigned n = nodes_.size();
 
 	Eigen::VectorXi v = Eigen::VectorXi::Zero(n);
-	Eigen::VectorXi val = Eigen::VectorXi::Zero(n);
-	Eigen::VectorXi wc = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXf val = Eigen::VectorXf::Zero(n);
+	Eigen::VectorXf wc = Eigen::VectorXf::Zero(n);
 	v[0] = 1;
 
 	for (unsigned k = 0; k < n; ++k)
@@ -331,7 +331,7 @@ DAG::checkLongestChain() const
 		v = dagMatrix_ * v;
 		convertToBooleanVec(v);
 
-		Eigen::VectorXi temp = wc.array() * v.array();
+		Eigen::VectorXf temp = wc.array() * v.cast<float>().array();
 		val = maxProduct(dagMatrix_, val) + temp;
 
 		if (val[endIdx] > static_cast<int>(period_))
@@ -390,11 +390,11 @@ DAG::createNodeInfo()
 	unsigned n = nodes_.size();
 
 	Eigen::VectorXi v = Eigen::VectorXi::Zero(n);
-	Eigen::VectorXi val = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXf val = Eigen::VectorXf::Zero(n);
 	Eigen::VectorXi vBackwards = Eigen::VectorXi::Zero(n);
-	Eigen::VectorXi valBackwards = Eigen::VectorXi::Zero(n);
-	nodeInfo_.bc = Eigen::VectorXi::Zero(n);
-	nodeInfo_.wc = Eigen::VectorXi::Zero(n);
+	Eigen::VectorXf valBackwards = Eigen::VectorXf::Zero(n);
+	nodeInfo_.bc = Eigen::VectorXf::Zero(n);
+	nodeInfo_.wc = Eigen::VectorXf::Zero(n);
 	v[0] = 1;
 	vBackwards[1] = 1;
 
@@ -413,11 +413,11 @@ DAG::createNodeInfo()
 		convertToBooleanVec(v);
 		convertToBooleanVec(vBackwards);
 
-		Eigen::VectorXi temp = nodeInfo_.bc.array() * v.array();
+		Eigen::VectorXf temp = nodeInfo_.bc.array() * v.cast<float>().array();
 		// val = max_cellwise(val, val_after_step)
 		val = (maxProduct(dagMatrix_, val) + temp).array().max(val.array()).matrix();
 
-		Eigen::VectorXi tempBack = nodeInfo_.wc.array() * vBackwards.array();
+		Eigen::VectorXf tempBack = nodeInfo_.wc.array() * vBackwards.cast<float>().array();
 		// val = max_cellwise(val, val_after_step)
 		valBackwards =
 				(maxProduct(back, valBackwards) + tempBack).array().max(valBackwards.array()).matrix();
@@ -540,7 +540,7 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain)
 			if (temp[first] == 1)
 				break;
 
-		unsigned diff = (hpCounter + (first / n)) * period_ + nodeInfo_.lft[first % n]
+		float diff = (hpCounter + (first / n)) * period_ + nodeInfo_.lft[first % n]
 				- nodeInfo_.est[*it];
 		if (diff > info.reactionTime)
 		{

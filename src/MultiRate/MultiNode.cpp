@@ -5,6 +5,7 @@
  *      Author: mirco
  */
 #include "MultiRate/MultiNode.h"
+#include <iostream>
 
 std::vector<std::shared_ptr<Node>>
 MultiNode::createNodes(unsigned hyperPeriod)

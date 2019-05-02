@@ -10,11 +10,11 @@
 
 #include <eigen3/Eigen/Dense>
 
-Eigen::VectorXi
-maxProduct(const Eigen::MatrixXi& A, const Eigen::VectorXi& b);
+Eigen::VectorXf
+maxProduct(const Eigen::MatrixXi& A, const Eigen::VectorXf& b);
 
 int
-maxProductVector(const Eigen::VectorXi& a, const Eigen::VectorXi& b);
+maxProductVector(const Eigen::VectorXi& a, const Eigen::VectorXf& b);
 
 
 

@@ -25,13 +25,13 @@ public:
 
 	struct NodeInfo
 	{
-		Eigen::VectorXi bc; //Best case execution time
-		Eigen::VectorXi wc; //Worst case execution time
+		Eigen::VectorXf bc; //Best case execution time
+		Eigen::VectorXf wc; //Worst case execution time
 
-		Eigen::VectorXi est; //Earliest Starting Time
-		Eigen::VectorXi lst; //Latest Starting Time
-		Eigen::VectorXi eft; //Earliest Finishing Time
-		Eigen::VectorXi lft; //Latest Finishing Time
+		Eigen::VectorXf est; //Earliest Starting Time
+		Eigen::VectorXf lst; //Latest Starting Time
+		Eigen::VectorXf eft; //Earliest Finishing Time
+		Eigen::VectorXf lft; //Latest Finishing Time
 
 		friend std::ostream &
 		operator <<(std::ostream &out, const NodeInfo &c);

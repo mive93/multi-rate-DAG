@@ -42,15 +42,15 @@ taskset3()
 	tstart = time(0);
 	MultiRateTaskset taskSet;
 
-	auto task1 = taskSet.addTask(5, 2, "imu");
-	auto task2 = taskSet.addTask(20, 5, "gps");
-	auto task3 = taskSet.addTask(10, 3, "planner");
-	auto task4 = taskSet.addTask(10, 4, "controller");
+	auto task1 = taskSet.addTask(5, 2.5, "imu");
+	auto task2 = taskSet.addTask(20, 5.2, "gps");
+	auto task3 = taskSet.addTask(10, 1.7, "planner");
+	auto task4 = taskSet.addTask(5, 2.2, "controller");
 	auto task5 = taskSet.addTask(20, 2, "act");
 //	auto task6 = taskSet.addTask(40, 15, "train");
 //	auto task7 = taskSet.addTask(160, 50, "independent");
 
-	taskSet.addPrecedenceEdge(task3, task4);
+	taskSet.addDataEdge(task3, task4, 1);
 
 	taskSet.addDataEdge(task1, task3, 1);
 	taskSet.addDataEdge(task1, task4, 1);
@@ -67,13 +67,12 @@ taskset3()
 	if (dags.empty())
 		return 1;
 
-	unsigned numEdges = 1000000;
+	float numEdges = 10000;
 	unsigned id = 0;
 	unsigned k = 0;
 
 	for (auto& dag : dags)
 	{
-
 		auto info = dag.getLatencyInfo({0,0,2,3,4});
 		if (info.reactionTime < numEdges)
 		{
@@ -84,9 +83,8 @@ taskset3()
 	}
 
 	dags[id].toTikz("prova.tex");
+	std::cout << dags[id].getNodeInfo() << std::endl;
 	std::cout << dags[id].getLatencyInfo({0,0,2,3,4}) << std::endl;
-
-
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;

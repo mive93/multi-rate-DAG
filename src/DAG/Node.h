@@ -20,16 +20,16 @@ struct Node
 	;
 
 	inline
-	Node(unsigned o, unsigned d, unsigned wc, unsigned bc, unsigned g) :
+	Node(float o, float d, float wc, float bc, unsigned g) :
 			offset(o), deadline(d), wcet(wc), bcet(bc), groupId(g), uniqueId(0)
 	{
 	}
 	;
 
-	unsigned offset;
-	unsigned deadline;
-	unsigned wcet;
-	unsigned bcet;
+	float offset;
+	float deadline;
+	float wcet;
+	float bcet;
 	unsigned groupId;
 
 	unsigned uniqueId;

@@ -8,14 +8,14 @@
 
 #include "DAG/MaxProduct.h"
 
-Eigen::VectorXi 
-maxProduct(const Eigen::MatrixXi& A, const Eigen::VectorXi& b)
+Eigen::VectorXf
+maxProduct(const Eigen::MatrixXi& A, const Eigen::VectorXf& b)
 {
-	return (A.array().rowwise() * b.transpose().array()).rowwise().maxCoeff();
+	return (A.cast<float>().array().rowwise() * b.transpose().array()).rowwise().maxCoeff();
 }
 
 int
-maxProductVector(const Eigen::VectorXi& a, const Eigen::VectorXi& b)
+maxProductVector(const Eigen::VectorXi& a, const Eigen::VectorXf& b)
 {
-	return (a.array() * b.array()).maxCoeff();
+	return (a.cast<float>().array() * b.array()).maxCoeff();
 }

@@ -11,9 +11,9 @@
 
 struct LatencyInfo
 {
-	unsigned minLatency; //Not implemented yet
-	unsigned maxLatency; // Also Data Age
-	unsigned reactionTime;
+	float minLatency; //Not implemented yet
+	float maxLatency; // Also Data Age
+	float reactionTime;
 
 	std::pair<unsigned, unsigned> minLatencyPair;
 	std::pair<unsigned, unsigned> maxLatencyPair;

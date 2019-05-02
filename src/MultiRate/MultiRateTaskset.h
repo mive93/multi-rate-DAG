@@ -27,10 +27,10 @@ public:
 	toTikz(std::string filename) const;
 
 	std::shared_ptr<MultiNode>
-	addTask(unsigned period, unsigned wcet, unsigned deadline, const std::string& name = std::string());
+	addTask(unsigned period, float wcet, float deadline, const std::string& name = std::string());
 
 	std::shared_ptr<MultiNode>
-	addTask(unsigned period, unsigned wcet, const std::string& name = std::string());
+	addTask(unsigned period, float wcet, const std::string& name = std::string());
 
 	const MultiEdge&
 	addPrecedenceEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to);

@@ -15,7 +15,7 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 {
 	auto dagNodes = dag.getNodes();
 
-	std::set<unsigned> dummyVals;
+	std::set<float> dummyVals;
 
 	for (auto node : dagNodes)
 	{
@@ -23,7 +23,7 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 		dummyVals.insert(node->deadline);
 	}
 
-	std::map<unsigned, std::shared_ptr<Node>> sync;
+	std::map<float, std::shared_ptr<Node>> sync;
 
 	for (auto it = dummyVals.begin(); it != dummyVals.end(); it++)
 	{
@@ -32,8 +32,8 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 			continue;
 
 		auto syncNode = std::make_shared<Node>(*it, *it, 0, 0, 666);
-		syncNode->name = "sync" + std::to_string(*it);
-		syncNode->shortName = std::to_string(*it);
+		syncNode->name = "sync" + std::to_string(static_cast<int>(*it));
+		syncNode->shortName = std::to_string(static_cast<int>(*it));
 
 		sync.insert(std::make_pair(*it, syncNode));
 		syncNodes.push_back(syncNode);
@@ -53,8 +53,8 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 
 	auto dummy = std::make_shared<Node>(0, syncNodes.front()->offset, syncNodes.front()->offset,
 			syncNodes.front()->offset, 667);
-	dummy->name = "dummy0-" + std::to_string(syncNodes.front()->offset);
-	dummy->shortName = "0-" + std::to_string(syncNodes.front()->offset);
+	dummy->name = "dummy0-" + std::to_string(static_cast<int>(syncNodes.front()->offset));
+	dummy->shortName = "0-" + std::to_string(static_cast<int>(syncNodes.front()->offset));
 	dummyTasks.push_back(dummy);
 	dummyChain.push_back(Edge(dag.getStart(), dummy));
 	dummyChain.push_back(Edge(dummy, syncNodes.front()));
@@ -63,21 +63,21 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 		auto next = std::next(it);
 		if (next == syncNodes.end())
 			break;
-		unsigned s = (*it)->deadline;
-		unsigned e = (*next)->offset;
+		float s = (*it)->deadline;
+		float e = (*next)->offset;
 		auto d = std::make_shared<Node>(s, e, e - s, e - s, 667);
-		d->name = "dummy" + std::to_string(s) + "-" + std::to_string(e);
-		d->shortName = std::to_string(s) + "-" + std::to_string(e);
+		d->name = "dummy" + std::to_string(static_cast<int>(s)) + "-" + std::to_string(static_cast<int>(e));
+		d->shortName = std::to_string(static_cast<int>(s)) + "-" + std::to_string(static_cast<int>(e));
 
 		dummyTasks.push_back(d);
 		dummyChain.push_back(Edge(*it, d));
 		dummyChain.push_back(Edge(d, *next));
 	}
-	unsigned s = syncNodes.back()->deadline;
-	unsigned e = dag.getEnd()->offset;
+	float s = syncNodes.back()->deadline;
+	float e = dag.getEnd()->offset;
 	dummy = std::make_shared<Node>(s, e, e - s, e - s, 667);
-	dummy->name = "dummy" + std::to_string(s) + "-" + std::to_string(e);
-	dummy->shortName = std::to_string(s) + "-" + std::to_string(e);
+	dummy->name = "dummy" + std::to_string(static_cast<int>(s)) + "-" + std::to_string(static_cast<int>(e));
+	dummy->shortName = std::to_string(static_cast<int>(s)) + "-" + std::to_string(static_cast<int>(e));
 	dummyTasks.push_back(dummy);
 	dummyChain.push_back(Edge(syncNodes.back(), dummy));
 	dummyChain.push_back(Edge(dummy, dag.getEnd()));
