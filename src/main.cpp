@@ -6,6 +6,7 @@
  */
 
 #include <DAG/MaxProduct.h>
+#include <VariableTaskSet/VariableTaskSet.h>
 #include <eigen3/Eigen/Core>
 #include <iostream>
 #include "MultiRate/MultiRateTaskset.h"
@@ -45,22 +46,23 @@ taskset3()
 	MultiRateTaskset taskSet;
 
 	auto task1 = taskSet.addTask(5, 2.5, "imu");
-	auto task2 = taskSet.addTask(20, 5.2, "gps");
+	auto task2 = taskSet.addTask(10, 5.2, "gps");
 	auto task3 = taskSet.addTask(10, 1.7, "planner");
 	auto task4 = taskSet.addTask(5, 2.2, "controller");
-	auto task5 = taskSet.addTask(20, 2, "act");
+	auto task5 = taskSet.addTask(10, 2, "act");
 	//auto task6 = taskSet.addTask(40, 15, "train");
 	//auto task7 = taskSet.addTask(160, 50, "independent");
 
-	taskSet.addDataEdge(task3, task4, 1);
+	taskSet.addDataEdge(task3, task4, 0);
 
-	taskSet.addDataEdge(task1, task3, 1);
+	taskSet.addDataEdge(task1, task3, 0);
 	taskSet.addDataEdge(task1, task4, 1);
 	taskSet.addDataEdge(task2, task3, 1);
-	taskSet.addDataEdge(task2, task4, 1);
-	taskSet.addDataEdge(task4, task5, 0);
+	taskSet.addDataEdge(task2, task4, 2);
+	taskSet.addDataEdge(task4, task5, 1);
 	//taskSet.addDataEdge(task1, task6, 6);
 	//taskSet.addDataEdge(task2, task6, 0);
+
 
 	taskSet.createBaselineDAG();
 
@@ -75,7 +77,7 @@ taskset3()
 
 	for (auto& dag : dags)
 	{
-		auto info = dag.getLatencyInfo({0,0,3,2,4});
+		auto info = dag.getLatencyInfo( { 0, 0, 2, 3, 4 });
 		if (info.reactionTime < numEdges)
 		{
 			numEdges = info.reactionTime;
@@ -83,20 +85,16 @@ taskset3()
 		}
 		k++;
 
-		scheduleDAG(dag,2);
+//		scheduleDAG(dag,2);
 	}
 
-
-
 	dags[id].toTikz("prova.tex");
+	dags[id].getOriginatingTaskset()->toTikz("cool.tex");
 	std::cout << dags[id].getNodeInfo() << std::endl;
-	std::cout << dags[id].getLatencyInfo({0,0,3,2,4}) << std::endl;
+	std::cout << dags[id].getLatencyInfo( { 0, 0, 2, 3, 4 }) << std::endl;
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
-
-
-	
 
 	return 0;
 
@@ -120,6 +118,65 @@ taskset2()
 
 	auto dags = taskSet.createDAGs();
 
+	return 0;
+}
+
+int
+multiTaskset()
+{
+	time_t tstart, tend;
+	tstart = time(0);
+	VariableTaskSet taskSet;
+
+	auto task1 = taskSet.addTask(5, 2.5, "imu");
+	auto task2 = taskSet.addTask(20, 5.2, "gps");
+	auto task3 = taskSet.addTask(10, 5, "planner");
+	auto task4 = taskSet.addTask(10, 8, "controller");
+	auto task5 = taskSet.addTask(20, 2, "act");
+	auto task6 = taskSet.addTask(40, 25, "train");
+	//auto task7 = taskSet.addTask(160, 50, "independent");
+
+	taskSet.addDataEdge(task3, task4, { 0, 1});
+
+	taskSet.addDataEdge(task1, task3, { 0, 1, 2 });
+	taskSet.addDataEdge(task1, task4, { 0, 1, 2 });
+	taskSet.addDataEdge(task2, task3, { 0, 1, 2 });
+	taskSet.addDataEdge(task2, task4, { 0, 1, 2 });
+	taskSet.addDataEdge(task4, task5, { 0, 1, 2 });
+	taskSet.addDataEdge(task1, task6,  { 7,8 });
+	taskSet.addDataEdge(task2, task6,  { 2 });
+
+	taskSet.createBaselineTaskset();
+
+	auto& allDags = taskSet.createDAGs();
+
+	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
+
+	float numEdges = 10000;
+	unsigned id = 0;
+	unsigned k = 0;
+
+	for (auto& dag : allDags)
+	{
+		auto info = dag.getLatencyInfo( { 0, 0, 2, 3, 4 });
+		if (info.reactionTime < numEdges)
+		{
+			numEdges = info.reactionTime;
+			id = k;
+		}
+		k++;
+//		scheduleDAG(dag,2);
+	}
+//
+//
+
+	allDags[id].toTikz("prova.tex");
+	allDags[id].getOriginatingTaskset()->toTikz("cool.tex");
+	std::cout << allDags[id].getNodeInfo() << std::endl;
+	std::cout << allDags[id].getLatencyInfo({0,0,2,3,4}) << std::endl;
+
+	tend = time(0);
+	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
 
 	return 0;
 }
@@ -127,7 +184,7 @@ taskset2()
 int
 main()
 {
-	return taskset3();
+	return multiTaskset();
 //
 //	Eigen::Matrix<int, 5, 1> v1;
 //	Eigen::Matrix<int, 5, 5> v2 = Eigen::Matrix<int, 5, 5>::Random();
@@ -135,7 +192,6 @@ main()
 //	v1 << 0,0,1,1,0;
 //
 //	std::cout << v1.asDiagonal() * v2 << std::endl;
-
 
 }
 

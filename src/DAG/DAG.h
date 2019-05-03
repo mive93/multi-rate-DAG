@@ -18,6 +18,7 @@
 #include "Node.h"
 
 struct MultiEdge;
+class MultiRateTaskset;
 
 class DAG
 {
@@ -148,7 +149,19 @@ public:
 	}
 
 	LatencyInfo
-	getLatencyInfo(std::vector<unsigned> dataChain);
+	getLatencyInfo(std::vector<unsigned> dataChain) const;
+
+	MultiRateTaskset*
+	getOriginatingTaskset() const
+	{
+		return originatingTaskset_;
+	}
+
+	void
+	setOriginatingTaskset(MultiRateTaskset* originatingTaskset)
+	{
+		originatingTaskset_ = originatingTaskset;
+	}
 
 private:
 
@@ -173,6 +186,8 @@ private:
 	std::shared_ptr<Node> end_;
 
 	unsigned period_;
+
+	MultiRateTaskset* originatingTaskset_;
 
 };
 

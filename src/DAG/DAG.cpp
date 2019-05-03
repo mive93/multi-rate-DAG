@@ -307,7 +307,7 @@ DAG::DAG(const DAG& other) :
 		dagMatrix_(other.getDAGMatrix()), ancestors_(other.getAncestors()), definitelySerialized_(
 				other.getDefinitelySerialized()), nodes_(other.getNodes()), edges_(
 				other.getEdges()), nodeInfo_(other.nodeInfo_), start_(other.getStart()), end_(
-				other.getEnd()), period_(other.period_)
+				other.getEnd()), period_(other.period_), originatingTaskset_(other.getOriginatingTaskset())
 {
 }
 
@@ -458,7 +458,7 @@ operator <<(std::ostream &out, const DAG::NodeInfo &info)
 }
 
 LatencyInfo
-DAG::getLatencyInfo(std::vector<unsigned> dataChain)
+DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 {
 	unsigned n = nodes_.size();
 

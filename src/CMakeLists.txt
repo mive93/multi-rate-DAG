@@ -7,6 +7,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall")
 
 include_directories(${CMAKE_SOURCE_DIR})
 
+set(VARIABLE_SRCS	VariableTaskSet/VariableTaskSet.cpp
+					VariableTaskSet/VariableMultiEdge.cpp
+					)
+
 set(MULTIRATE_SRCS	MultiRate/MultiNode.cpp
 					MultiRate/MultiEdge.cpp
 					MultiRate/MultiRateTaskset.cpp
@@ -20,6 +24,7 @@ set(DAG_SRCS	DAG/DAG.cpp
 				)
 
 add_executable(main main.cpp
+					${VARIABLE_SRCS}
 					${MULTIRATE_SRCS}
 					${DAG_SRCS}
 					)

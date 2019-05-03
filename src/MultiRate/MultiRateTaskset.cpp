@@ -15,9 +15,16 @@ MultiRateTaskset::MultiRateTaskset() :
 {
 }
 
+MultiRateTaskset::MultiRateTaskset(const MultiRateTaskset& other) :
+		baselineDAG_(other.getBaselineDag()), dags_(other.getDags()), nodes_(other.getNodes()), edges_(
+				other.getEdges()), dummyNodes_(other.getDummyNodes()), hyperPeriod_(
+				other.getHyperPeriod())
+
+{
+}
+
 std::shared_ptr<MultiNode>
-MultiRateTaskset::addTask(unsigned period, float wcet, float deadline,
-		const std::string& name)
+MultiRateTaskset::addTask(unsigned period, float wcet, float deadline, const std::string& name)
 {
 	auto mult = std::make_shared<MultiNode>();
 	mult->period = period;
@@ -101,6 +108,7 @@ MultiRateTaskset::createBaselineDAG()
 	auto nodes = baselineDAG_.getNodes();
 	for (unsigned k = 0; k < nodes.size(); k++)
 		nodes[k]->uniqueId = k;
+
 	return baselineDAG_;
 }
 
@@ -133,10 +141,11 @@ MultiRateTaskset::createDAGs()
 
 	std::cout << numPermutations << " Permutations available" << std::endl;
 
+	baselineDAG_.setOriginatingTaskset(this);
 	dags_.clear();
 	for (int k = 0; k < numPermutations; k++)
 	{
-		std::cout << k << "/" << numPermutations;
+//		std::cout << k + 1 << "/" << numPermutations;
 		DAG dag(baselineDAG_);
 
 		int tmp = k;
@@ -153,7 +162,7 @@ MultiRateTaskset::createDAGs()
 
 		if (dag.isCyclic())
 		{
-			std::cout << " excluded because it is cyclic" << std::endl;
+//			std::cout << " excluded because it is cyclic" << std::endl;
 			cyclicDags++;
 			continue;
 		}
@@ -161,24 +170,23 @@ MultiRateTaskset::createDAGs()
 		dag.createMats();
 		dag.transitiveReduction();
 
-
 		//Check WCET sum in the chains
 		if (!dag.checkLongestChain())
 		{
-			std::cout << " excluded because longest chain too long" << std::endl;
+//			std::cout << " excluded because longest chain too long" << std::endl;
 			wcetFailure++;
 			continue;
 		}
 
 		if (!checkJitter(dag))
 		{
-			std::cout << " excluded because jitter incorrect" << std::endl;
+//			std::cout << " excluded because jitter incorrect" << std::endl;
 			jitterFailure++;
 			continue;
 		}
 
 		dag.createNodeInfo();
-		std::cout << " is fine" << std::endl;
+//		std::cout << " is fine" << std::endl;
 		dags_.push_back(std::move(dag));
 	}
 
@@ -203,6 +211,12 @@ MultiRateTaskset::getDummyNodes() const
 	return dummyNodes_;
 }
 
+void
+MultiRateTaskset::addEdge(const MultiEdge& edge)
+{
+	edges_.push_back(edge);
+}
+
 bool
 MultiRateTaskset::checkJitter(const DAG& dag) const
 {
@@ -211,28 +225,20 @@ MultiRateTaskset::checkJitter(const DAG& dag) const
 
 	Eigen::MatrixXi parMat = groupMat.transpose() * jitterMat * groupMat;
 
-	bool correct = true;
 	for (const auto& edge : edges_)
 	{
 		int from = edge.from->id;
 		int to = edge.to->id;
 
 		int normFactor = hyperPeriod_ / std::max(edge.from->period, edge.to->period);
-		float jitter = (float)parMat.coeff(from - 1, to - 1) / normFactor;
+		float jitter = (float) parMat.coeff(from - 1, to - 1) / normFactor;
 		if ((float) edge.jitter != jitter)
-		{
-
-//			std::cout << "Jitter from " << from << " to " << to << " should be " << edge.jitter
-//					<< ", but is " << (float)parMat.coeff(from - 1, to - 1) / normFactor
-//					<< " with normFac " << normFactor << std::endl;
-			correct = false;
-		}
+			return false;
 	}
-	return correct;
+	return true;
 }
 
-
-void 
+void
 MultiRateTaskset::toTikz(std::string filename) const
 {
 	//opening the tex file
@@ -241,40 +247,40 @@ MultiRateTaskset::toTikz(std::string filename) const
 
 	//beginning the tikz figure
 	tikz_file << "\\documentclass[tikz,border=10pt]{standalone}\n"
-				"\\usepackage{tkz-graph}\n"
-				"\\usetikzlibrary{automata}\n"
-				"\\usetikzlibrary[automata]\n"
-				"\\begin{document}\n";
+			"\\usepackage{tkz-graph}\n"
+			"\\usetikzlibrary{automata}\n"
+			"\\usetikzlibrary[automata]\n"
+			"\\begin{document}\n";
 
 	tikz_file << "\\begin{tikzpicture}[shorten >=1pt,node distance=3cm,auto,bend angle=45]\n";
 	tikz_file << "\\tikzstyle{state}=[state with output]\n";
 
-
-	float x = 0, y=0, max_y =0;
-	for(auto node: nodes_)
+	float x = 0, y = 0, max_y = 0;
+	for (auto node : nodes_)
 	{
-
-		for ( auto edge : edges_)
+		for (auto edge : edges_)
 		{
-			if( edge.to->name == node->name)
+			if (edge.to->name == node->name)
 			{
-				y = max_y/2;
+				y = max_y / 2;
 				x += 4;
 				break;
 			}
 		}
-		max_y = (y > max_y) ? y:max_y;
-		tikz_file << "\\node[state] (" << node->name<< ") at (" << x << "," << y << ") {" << node->name << " \\nodepart{lower} $T="<<node->period<<"$};\n";
-		y+=4;
+		max_y = (y > max_y) ? y : max_y;
+		tikz_file << "\\node[state] (" << node->name << ") at (" << x << "," << y << ") {"
+				<< node->name << " \\nodepart{lower} $T=" << node->period << "$};\n";
+		y += 4;
 	}
 
 	tikz_file << "\\path[->] \n";
-	std::string edge_type="";
-	for ( auto edge : edges_)
+	std::string edge_type = "";
+	for (auto edge : edges_)
 	{
-		if(edge.dependency ==MultiEdge::Dependency::DATA)
-		edge_type="[dashed]";
-		tikz_file << "(" << edge.from->name << ") edge"<<edge_type<<" node {"<<edge.jitter<<"} (" << edge.to->name<< ")\n";
+		if (edge.dependency == MultiEdge::Dependency::DATA)
+			edge_type = "[dashed]";
+		tikz_file << "(" << edge.from->name << ") edge" << edge_type << " node {" << edge.jitter
+				<< "} (" << edge.to->name << ")\n";
 	}
 	tikz_file << ";\n";
 
