@@ -14,6 +14,7 @@
 #include "MultiRate/DummyNodes.h"
 #include "MultiRate/MultiEdge.h"
 
+
 struct MultiNode;
 
 class MultiRateTaskset
@@ -22,6 +23,7 @@ public:
 
 	MultiRateTaskset();
 
+	MultiRateTaskset(const MultiRateTaskset& other);
 
 	void
 	toTikz(std::string filename) const;
@@ -38,6 +40,9 @@ public:
 	const MultiEdge&
 	addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to, unsigned jitter);
 
+	void
+	addEdge(const MultiEdge& edge);
+
 	const DAG&
 	createBaselineDAG();
 
@@ -53,6 +58,33 @@ public:
 	bool
 	checkJitter(const DAG& dag) const;
 
+	const DAG&
+	getBaselineDag() const
+	{
+		return baselineDAG_;
+	}
+
+	const std::vector<DAG>&
+	getDags() const
+	{
+		return dags_;
+	}
+
+	unsigned
+	getHyperPeriod() const
+	{
+		return hyperPeriod_;
+	}
+
+	const std::vector<std::shared_ptr<MultiNode> >&
+	getNodes() const
+	{
+		return nodes_;
+	}
+
+	float
+	getUtilization() const;
+
 private:
 
 	DAG baselineDAG_;
@@ -65,5 +97,6 @@ private:
 
 	unsigned hyperPeriod_;
 };
+
 
 #endif /* MULTIRATE_H_ */

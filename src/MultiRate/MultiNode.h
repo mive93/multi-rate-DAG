@@ -32,6 +32,9 @@ struct MultiNode
 
 	std::vector<std::shared_ptr<Node>> nodes;
 
+	float
+	getUtilization() const;
+
 };
 
 
