@@ -114,3 +114,12 @@ VariableTaskSet::createDAGs()
 	}
 	return allDAGs_;
 }
+
+float
+VariableTaskSet::getUtilization() const
+{
+	float u = 0;
+	for (const auto& node : nodes_)
+		u += node->getUtilization();
+	return u;
+}

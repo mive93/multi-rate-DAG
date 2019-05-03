@@ -40,6 +40,9 @@ public:
 	const std::vector<DAG>&
 	createDAGs();
 
+	float
+	getUtilization() const;
+
 
 private:
 
