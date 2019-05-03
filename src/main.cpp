@@ -45,12 +45,12 @@ taskset3()
 	MultiRateTaskset taskSet;
 
 	auto task1 = taskSet.addTask(5, 2.5, "imu");
-	auto task2 = taskSet.addTask(20, 5.2, "gps");
+	auto task2 = taskSet.addTask(20, 3.2, "gps");
 	auto task3 = taskSet.addTask(10, 1.7, "planner");
 	auto task4 = taskSet.addTask(5, 2.2, "controller");
 	auto task5 = taskSet.addTask(20, 2, "act");
-	//auto task6 = taskSet.addTask(40, 15, "train");
-	//auto task7 = taskSet.addTask(160, 50, "independent");
+	//auto task6 = taskSet.addTask(40, 5, "train");
+	//auto task7 = taskSet.addTask(80, 10, "independent");
 
 	taskSet.addDataEdge(task3, task4, 1);
 
@@ -72,6 +72,7 @@ taskset3()
 	float numEdges = 10000;
 	unsigned id = 0;
 	unsigned k = 0;
+	int n_processors = 4;
 
 	for (auto& dag : dags)
 	{
@@ -83,12 +84,13 @@ taskset3()
 		}
 		k++;
 
-		scheduleDAG(dag,2);
+		scheduleDAG(dag,n_processors);
 	}
 
 
 
 	dags[id].toTikz("prova.tex");
+	scheduleDAG(dags[id],n_processors,true,"schedule_test.tex");
 	std::cout << dags[id].getNodeInfo() << std::endl;
 	std::cout << dags[id].getLatencyInfo({0,0,3,2,4}) << std::endl;
 
