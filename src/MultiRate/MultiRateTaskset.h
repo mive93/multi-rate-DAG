@@ -82,6 +82,9 @@ public:
 		return nodes_;
 	}
 
+	float
+	getUtilization() const;
+
 private:
 
 	DAG baselineDAG_;

@@ -132,9 +132,9 @@ multiTaskset()
 	auto task2 = taskSet.addTask(20, 5.2, "gps");
 	auto task3 = taskSet.addTask(10, 5, "planner");
 	auto task4 = taskSet.addTask(10, 8, "controller");
-	auto task5 = taskSet.addTask(20, 2, "act");
+	auto task5 = taskSet.addTask(20, 9, "act");
 	auto task6 = taskSet.addTask(40, 25, "train");
-	//auto task7 = taskSet.addTask(160, 50, "independent");
+//	auto task7 = taskSet.addTask(160, 50, "independent");
 
 	taskSet.addDataEdge(task3, task4, { 0, 1});
 
@@ -144,7 +144,7 @@ multiTaskset()
 	taskSet.addDataEdge(task2, task4, { 0, 1, 2 });
 	taskSet.addDataEdge(task4, task5, { 0, 1, 2 });
 	taskSet.addDataEdge(task1, task6,  { 7,8 });
-	taskSet.addDataEdge(task2, task6,  { 2 });
+	taskSet.addDataEdge(task2, task6,  { 0,1,2 });
 
 	taskSet.createBaselineTaskset();
 

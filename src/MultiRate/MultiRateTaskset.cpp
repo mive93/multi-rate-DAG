@@ -135,6 +135,19 @@ MultiRateTaskset::createDAGs()
 		permutSets[k] = permutSets[k + 1] * permutSets[k];
 	}
 
+	for (const auto& edge : edges_)
+		if (edge.jitter == 0)
+			if (edge.from->getUtilization() + edge.to->getUtilization() > 1.0)
+			{
+				std::cout << "Utilization overusage" << std::endl;
+				std::cout << "Edge from " << edge.from->name << " to " << edge.to->name << ":" << std::endl;
+				std::cout << "Jitter is 0 but total utilization is " << edge.from->getUtilization() + edge.to->getUtilization() << std::endl;
+				std::cout << "Taskset not schedulable." << std::endl;
+				std::cout << dags_.size() << " valid DAGs were created" << std::endl;
+
+				return dags_;
+			}
+
 	int cyclicDags = 0;
 	int wcetFailure = 0;
 	int jitterFailure = 0;
@@ -290,4 +303,13 @@ MultiRateTaskset::toTikz(std::string filename) const
 
 	//close the file
 	tikz_file.close();
+}
+
+float
+MultiRateTaskset::getUtilization() const
+{
+	float u = 0;
+	for (const auto& node : nodes_)
+		u += node->getUtilization();
+	return u;
 }
