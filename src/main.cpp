@@ -45,12 +45,12 @@ taskset3()
 	tstart = time(0);
 	MultiRateTaskset taskSet;
 
-	auto task1 = taskSet.addTask(5, 2.5, "imu");
-	auto task2 = taskSet.addTask(10, 5.2, "gps");
-	auto task3 = taskSet.addTask(10, 1.7, "planner");
-	auto task4 = taskSet.addTask(5, 2.2, "controller");
-	auto task5 = taskSet.addTask(10, 2, "act");
-	//auto task6 = taskSet.addTask(40, 15, "train");
+	auto task1 = taskSet.addTask(5, 1.9, "imu");
+	auto task2 = taskSet.addTask(10, 1.2, "gps");
+	auto task3 = taskSet.addTask(10, 1.5, "planner");
+	auto task4 = taskSet.addTask(5, 1.4, "controller");
+	auto task5 = taskSet.addTask(10, 3, "act");
+	auto task6 = taskSet.addTask(40, 5, "train");
 	//auto task7 = taskSet.addTask(160, 50, "independent");
 
 	taskSet.addDataEdge(task3, task4, 0);
@@ -186,7 +186,7 @@ multiTaskset()
 int
 main()
 {
-	return multiTaskset();
+	return taskset3();
 //
 //	Eigen::Matrix<int, 5, 1> v1;
 //	Eigen::Matrix<int, 5, 5> v2 = Eigen::Matrix<int, 5, 5>::Random();
