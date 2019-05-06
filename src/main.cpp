@@ -87,11 +87,11 @@ taskset3()
 		}
 		k++;
 
-		scheduleDAG(dag,n_processors);
+		scheduling::scheduleDAG(dag,n_processors);
 	}
 
 	dags[id].toTikz("prova.tex");
-	scheduleDAG(dags[id],n_processors,true,"schedule_test.tex");
+	scheduling::scheduleDAG(dags[id],n_processors,"schedule_test.tex", true);
 	dags[id].getOriginatingTaskset()->toTikz("cool.tex");
 	std::cout << dags[id].getNodeInfo() << std::endl;
 	std::cout << dags[id].getLatencyInfo( { 0, 0, 2, 3, 4 }) << std::endl;
@@ -167,7 +167,7 @@ multiTaskset()
 
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
-	scheduleDAG(bestDAG, 4, false, "schedule_test.tex");
+	scheduling::scheduleDAG(bestDAG, 4, "schedule_test.tex");
 
 
 	std::cout << bestDAG.getNodes().back()->executionTimeGen() << std::endl;
