@@ -124,12 +124,6 @@ public:
 		return period_;
 	}
 
-//	const DAGMatrix&
-//	getDescendents() const
-//	{
-////		return descendents_;
-//	}
-
 	void
 	createMats();
 

@@ -6,6 +6,7 @@
  */
 
 #include <DAG/MaxProduct.h>
+#include <Evaluation/Evaluation.h>
 #include <VariableTaskSet/VariableTaskSet.h>
 #include <eigen3/Eigen/Core>
 #include <iostream>
@@ -135,8 +136,8 @@ multiTaskset()
 	auto task3 = taskSet.addTask(10, 5, "planner");
 	auto task4 = taskSet.addTask(10, 8, "controller");
 	auto task5 = taskSet.addTask(20, 9, "act");
-//	auto task6 = taskSet.addTask(40, 25, "train");
-//	auto task7 = taskSet.addTask(160, 50, "independent");
+	auto task6 = taskSet.addTask(40, 35, "train");
+//	auto task7 = taskSet.addTask(80, 50, "independent");
 
 	taskSet.addDataEdge(task3, task4, { 0, 1});
 
@@ -145,8 +146,9 @@ multiTaskset()
 	taskSet.addDataEdge(task2, task3, { 0, 1, 2 });
 	taskSet.addDataEdge(task2, task4, { 0, 1, 2 });
 	taskSet.addDataEdge(task4, task5, { 0, 1, 2 });
-//	taskSet.addDataEdge(task1, task6,  { 7,8 });
-//	taskSet.addDataEdge(task2, task6,  { 0,1,2 });
+	taskSet.addDataEdge(task1, task6,  { 7, 8 });
+	taskSet.addDataEdge(task2, task6,  { 2 });
+	taskSet.addDataEdge(task5, task6,  { 1,2 });
 
 	taskSet.createBaselineTaskset();
 
@@ -154,28 +156,16 @@ multiTaskset()
 
 	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
-	float numEdges = 10000;
-	unsigned id = 0;
-	unsigned k = 0;
+	Evaluation eval;
+	eval.addLatency({task1, task1, task3, task4, task5}, LatencyCost(0,2), LatencyConstraint(50,55));
+	eval.addLatency({task2, task2, task3, task4, task5}, LatencyCost(0,3), LatencyConstraint(60,60));
+	eval.addLatency({task3, task4}, LatencyCost(), LatencyConstraint(20, 20));
+	eval.addLatency({task1, task6}, LatencyCost(), LatencyConstraint(40, 100));
 
-	for (auto& dag : allDags)
-	{
-		auto info = dag.getLatencyInfo( { 0, 0, 2, 3, 4 });
-		if (info.reactionTime < numEdges)
-		{
-			numEdges = info.reactionTime;
-			id = k;
-		}
-		k++;
-		scheduleDAG(dag,3,true);
-	}
-//
-//
+	const auto& bestDAG = eval.evaluate(allDags);
 
-	allDags[id].toTikz("prova.tex");
-	allDags[id].getOriginatingTaskset()->toTikz("cool.tex");
-	std::cout << allDags[id].getNodeInfo() << std::endl;
-	std::cout << allDags[id].getLatencyInfo({0,0,2,3,4}) << std::endl;
+	bestDAG.toTikz("prova.tex");
+	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
