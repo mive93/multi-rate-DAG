@@ -22,9 +22,13 @@ set(DAG_SRCS	DAG/DAG.cpp
 				DAG/Edge.cpp
 				DAG/MaxProduct.cpp
 				)
+					
+set(EVAL_SRCS	Evaluation/Evaluation.cpp
+				)
 
 add_executable(main main.cpp
 					${VARIABLE_SRCS}
 					${MULTIRATE_SRCS}
 					${DAG_SRCS}
+					${EVAL_SRCS}
 					)
