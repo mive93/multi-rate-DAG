@@ -38,6 +38,8 @@ private:
 	SchedulingInfo
 	getSchedulingInfo(const DAG& dag, const SchedulingConstraint& constraint);
 
+
+
 	std::vector<std::pair<Chain, std::pair<LatencyCost, LatencyConstraint>>> latencyEval_;
 
 	std::pair<SchedulingCost, SchedulingConstraint> schedulingEval_;

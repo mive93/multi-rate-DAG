@@ -16,22 +16,19 @@ set(MULTIRATE_SRCS	MultiRate/MultiNode.cpp
 					MultiRate/MultiRateTaskset.cpp
 					MultiRate/DummyNodes.cpp
 					)
-set(EVALUATION_SRCS	Evaluation/Scheduling.cpp
-					)
 					
 set(DAG_SRCS	DAG/DAG.cpp
-				DAG/Node.cpp
 				DAG/Edge.cpp
 				DAG/MaxProduct.cpp
 				)
 					
 set(EVAL_SRCS	Evaluation/Evaluation.cpp
+				Evaluation/Scheduling.cpp
 				)
 
 add_executable(main main.cpp
 					${VARIABLE_SRCS}
 					${MULTIRATE_SRCS}
-					${EVALUATION_SRCS}
 					${DAG_SRCS}
 					${EVAL_SRCS}
 					)

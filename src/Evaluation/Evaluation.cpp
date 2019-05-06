@@ -57,7 +57,6 @@ Evaluation::evaluate(const std::vector<DAG>& dags)
 
 		if (!schedulingEval_.second.isValid(info))
 		{
-			std::cout << "Hello" << std::endl;
 			cost[k] = NAN;
 			invalidDags++;
 			continue;

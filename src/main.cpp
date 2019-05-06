@@ -133,7 +133,7 @@ multiTaskset()
 
 	auto task1 = taskSet.addTask(5, 2.5, "imu");
 	auto task2 = taskSet.addTask(20, 5.2, "gps");
-	auto task3 = taskSet.addTask(10, 5, "planner");
+	auto task3 = taskSet.addTask(10, 5.4, "planner");
 	auto task4 = taskSet.addTask(10, 8, "controller");
 	auto task5 = taskSet.addTask(20, 9, "act");
 	auto task6 = taskSet.addTask(40, 35, "train");
@@ -146,9 +146,9 @@ multiTaskset()
 	taskSet.addDataEdge(task2, task3, { 0, 1, 2 });
 	taskSet.addDataEdge(task2, task4, { 0, 1, 2 });
 	taskSet.addDataEdge(task4, task5, { 0, 1, 2 });
-	taskSet.addDataEdge(task1, task6,  { 7, 8 });
+//	taskSet.addDataEdge(task1, task6,  { 7, 8 });
 	taskSet.addDataEdge(task2, task6,  { 2 });
-	taskSet.addDataEdge(task5, task6,  { 1,2 });
+//	taskSet.addDataEdge(task5, task6,  { 1,2 });
 
 	taskSet.createBaselineTaskset();
 
@@ -160,13 +160,17 @@ multiTaskset()
 	eval.addLatency({task1, task1, task3, task4, task5}, LatencyCost(0,2), LatencyConstraint(50,55));
 	eval.addLatency({task2, task2, task3, task4, task5}, LatencyCost(0,3), LatencyConstraint(60,60));
 	eval.addLatency({task3, task4}, LatencyCost(), LatencyConstraint(20, 20));
-	eval.addLatency({task1, task6}, LatencyCost(), LatencyConstraint(40, 100));
+//	eval.addLatency({task1, task6}, LatencyCost(), LatencyConstraint(40, 100));
+	eval.addScheduling(SchedulingCost(), SchedulingConstraint(4));
 
 	const auto& bestDAG = eval.evaluate(allDags);
 
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
+	scheduleDAG(bestDAG, 4, false, "schedule_test.tex");
 
+
+	std::cout << bestDAG.getNodes().back()->executionTimeGen() << std::endl;
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
 
@@ -176,7 +180,7 @@ multiTaskset()
 int
 main()
 {
-	return taskset3();
+	return multiTaskset();
 //
 //	Eigen::Matrix<int, 5, 1> v1;
 //	Eigen::Matrix<int, 5, 5> v2 = Eigen::Matrix<int, 5, 5>::Random();
