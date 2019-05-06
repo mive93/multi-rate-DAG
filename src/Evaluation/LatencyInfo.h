@@ -63,7 +63,7 @@ struct LatencyConstraint
 	bool
 	isValid(const LatencyInfo& info) const
 	{
-		return info.maxLatency < maxDataAge && info.reactionTime < maxReactionTime;
+		return info.maxLatency <= maxDataAge && info.reactionTime <= maxReactionTime;
 	}
 };
 

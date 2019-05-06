@@ -11,6 +11,13 @@
 
 struct SchedulingInfo
 {
+	SchedulingInfo() = default;
+
+	SchedulingInfo(unsigned m) :
+			numCoresNeeded(m)
+	{
+	}
+
 	unsigned numCoresNeeded = 1;
 };
 
