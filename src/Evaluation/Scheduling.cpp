@@ -78,7 +78,7 @@ scheduling::createScheduleInfo(const DAG &dag, unsigned &lastUniqueId, bool verb
 {
     ScheduleInfoVec nodesToSched;
     auto nodes = dag.getNodes();
-    auto Info = dag.getNodeInfo();
+    auto info = dag.getNodeInfo();
 
     for (size_t i = 0; i < nodes.size(); i++)
     {
@@ -86,10 +86,10 @@ scheduling::createScheduleInfo(const DAG &dag, unsigned &lastUniqueId, bool verb
         {
             std::shared_ptr<ScheduleInfo> si = std::make_shared<ScheduleInfo>();
             si->n = nodes[i];
-            si->est = Info.est[i];
-            si->lst = Info.lst[i];
-            si->eft = Info.eft[i];
-            si->lft = Info.lft[i];
+            si->est = info.est[i];
+            si->lst = info.lst[i];
+            si->eft = info.eft[i];
+            si->lft = info.lft[i];
             nodesToSched.push_back(si);
         }
         if (i == nodes.size() - 1)
@@ -243,7 +243,7 @@ bool scheduling::scheduleDAG(const DAG &dag, const unsigned nProc,const std::str
         //if a processor is avaiable and there are ready tasks, schedule them, otherwise schedule an idle task
         for (size_t i = 0; i < nProc; i++)
         {
-            if (std::abs(processorUsage[i]) <= epsilon)
+            if (std::islessequal(processorUsage[i],epsilon))
             {
                 if (!ready.empty())
                 {
