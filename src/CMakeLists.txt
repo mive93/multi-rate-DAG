@@ -32,3 +32,9 @@ add_executable(main main.cpp
 					${DAG_SRCS}
 					${EVAL_SRCS}
 					)
+					
+					
+					
+add_executable(sim Simulation/Simulate.cpp)
+
+target_link_libraries(sim uavap_core boost_system)
