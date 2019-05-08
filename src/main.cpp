@@ -50,8 +50,8 @@ taskset3()
 	auto task2 = taskSet.addTask(10, 1.2, "gps");
 	auto task3 = taskSet.addTask(10, 1.5, "planner");
 	auto task4 = taskSet.addTask(5, 1.4, "controller");
-	auto task5 = taskSet.addTask(10, 3, "act");
-	auto task6 = taskSet.addTask(40, 5, "train");
+	auto task5 = taskSet.addTask(20, 3, "act");
+	//auto task6 = taskSet.addTask(40, 5, "train");
 	//auto task7 = taskSet.addTask(160, 50, "independent");
 
 	taskSet.addDataEdge(task3, task4, 0);
@@ -59,8 +59,8 @@ taskset3()
 	taskSet.addDataEdge(task1, task3, 0);
 	taskSet.addDataEdge(task1, task4, 1);
 	taskSet.addDataEdge(task2, task3, 1);
-	taskSet.addDataEdge(task2, task4, 2);
-	taskSet.addDataEdge(task4, task5, 1);
+	//taskSet.addDataEdge(task2, task4, 2);
+	//taskSet.addDataEdge(task4, task5, 1);
 	//taskSet.addDataEdge(task1, task6, 6);
 	//taskSet.addDataEdge(task2, task6, 0);
 
@@ -94,7 +94,8 @@ taskset3()
 	scheduling::scheduleDAG(dags[id],n_processors,"schedule_test.tex", true);
 	dags[id].getOriginatingTaskset()->toTikz("cool.tex");
 	std::cout << dags[id].getNodeInfo() << std::endl;
-	std::cout << dags[id].getLatencyInfo( { 0, 0, 2, 3, 4 }) << std::endl;
+	std::cout << dags[id].getLatencyInfo( { 0,0,4 }) << std::endl;
+	dags[id].getLatencyInfoIterative( { 1,1,5});
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -180,7 +181,7 @@ multiTaskset()
 int
 main()
 {
-	return multiTaskset();
+	return taskset3();
 //
 //	Eigen::Matrix<int, 5, 1> v1;
 //	Eigen::Matrix<int, 5, 5> v2 = Eigen::Matrix<int, 5, 5>::Random();

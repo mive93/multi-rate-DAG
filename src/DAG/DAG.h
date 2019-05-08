@@ -145,6 +145,9 @@ public:
 	LatencyInfo
 	getLatencyInfo(std::vector<unsigned> dataChain) const;
 
+	LatencyInfo 
+	getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const;
+
 	MultiRateTaskset*
 	getOriginatingTaskset() const
 	{
