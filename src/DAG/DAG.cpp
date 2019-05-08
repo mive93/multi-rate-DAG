@@ -474,8 +474,8 @@ DAG::getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const
 		if (nodes_[i]->groupId != 0 && nodes_[i]->groupId != 667 && nodes_[i]->groupId != 666)
 			groupInstances[nodes_[i]->groupId].push_back(i);
 
-	std::cout<<"\twc\tbc\test\tlst"<<std::endl;
-	std::cout<<"--------------------------------------"<<std::endl;
+	std::cout<<"\twc\tbc\test\tlst\teft\tlft"<<std::endl;
+	std::cout<<"---------------------------------------------------"<<std::endl;
 	for( const auto& sm_pair : dataChain )
 	{
 		for( const auto& sc_pair : groupInstances[sm_pair] )
@@ -483,9 +483,11 @@ DAG::getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const
 			std::cout<<nodes_[sc_pair]->shortName<< " |\t"<< 
 				nodes_[sc_pair]->wcet<<"\t"<<nodes_[sc_pair]->bcet
 				<< "\t"<<  nodeInfo_.est[sc_pair]<< "\t"<< 
-				nodeInfo_.lst[sc_pair]<<std::endl;
+				nodeInfo_.lst[sc_pair]<<"\t"
+				<<  nodeInfo_.eft[sc_pair]<< "\t"<< 
+				nodeInfo_.lft[sc_pair]<<std::endl;
 		}
-		std::cout<<"--------------------------------------"<<std::endl;
+		std::cout<<"---------------------------------------------------"<<std::endl;
 	}
 
 	float begin, end;
@@ -535,15 +537,15 @@ DAG::getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const
 		begin = rb, end = rb;
 		int prev_s;
 		
-		/*std::cout<<"Begin ------";
+		std::cout<<"Begin ------";
 		std::cout<<"\ttau: "<<tau<<"\trb: "<<rb<<"\tre: "<<re
 			<<"\twc: "<<wc<<"\tbc: "<<bc<<"\tbegin: "<<
-			begin<<"\tend: "<<end<<std::endl;*/
+			begin<<"\tend: "<<end<<std::endl;
 
 		for(size_t j = 0; j< dataChain.size(); j++)
 		{
 			prev_s = -1;
-			int l = -1, s=-1;
+			int l = -1, s = -1;
 			int lhp = 0, shp = 0, prevshp = 0;
 			while(true)
 			{
@@ -577,41 +579,38 @@ DAG::getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const
 				shp++;
 			}
 			
-			if(!( nodeInfo_.est[s]+shp*period_>nodeInfo_.est[l]+lhp*period_) || prev_s < 0)
+			if(!( nodeInfo_.est[s] + shp * period_ > nodeInfo_.est[l] + lhp * period_) || prev_s < 0)
 			{
 				std::cout<<"Problem, data never reach the end of the chain"<<std::endl;
 				end = begin;
 				break;
 			}
-			
-			end = nodes_[s]->wcet + wc;
-			if(prev_s > -1)
-				end += std::min(re,nodeInfo_.lst[s-1]+prevshp*period_);
-			else
-				end+= re;
 
-			/*std::cout<<"\t"<<j<<":";
+			//end = std::min(re+wc, nodeInfo_.lst[s-1]+prevshp*period_+nodes_[s]->wcet);
+			end = nodes_[s]->wcet + wc +std::min(re,nodeInfo_.lst[s-1]+prevshp*period_);
+
+			std::cout<<"\t"<<j<<":";
 			std::cout<<"\ttau: "<<tau<<"\trb: "<<rb<<"\tre: "<<re
 				<<"\twc: "<<wc<<"\tbc: "<<bc<<"\tbegin: "
 				<<begin<<"\tend: "<<end;
 			std::cout<<"\tl: "<<nodes_[l]->shortName<<"\tlhp: "<<
 				lhp<<"\ts: "<<nodes_[s]->shortName<<"\tshp: "
 				<<shp<<"\ts-1: "<<nodes_[prev_s]->shortName
-				<<"\tprevshp: "<<prevshp<<std::endl;*/
+				<<"\tprevshp: "<<prevshp<<std::endl;
 
 			rb = std::max(nodeInfo_.est[l]+lhp*period_, rb+bc);
-			re = nodeInfo_.lst[s]+shp*period_;
-			bc = nodes_[l]->bcet;
-			wc = nodes_[l]->wcet;
+			re = nodeInfo_.lst[s] + shp * period_;
+			bc = nodes_[s]->bcet;
+			wc = nodes_[s]->wcet;
 			if(j < dataChain.size()-1)
 			{
 				tau = dataChain[j+1];
 			}
 		}
 
-		/*std::cout<<"End ------";
+		std::cout<<"End ------";
 		std::cout<<"\trb: "<<rb<<"\tre: "<<re<<"\tbegin: "<<begin<<
-			"\tend: "<<end<<"\t\tlatency: "<<end-begin<<std::endl<<std::endl;*/
+			"\tend: "<<end<<"\t\tlatency: "<<end-begin<<std::endl<<std::endl;
 
 		if(end-begin > info.maxLatency)
 		{

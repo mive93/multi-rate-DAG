@@ -46,11 +46,14 @@ taskset3()
 	tstart = time(0);
 	MultiRateTaskset taskSet;
 
-	auto task1 = taskSet.addTask(5, 1.9, "imu");
-	auto task2 = taskSet.addTask(10, 1.2, "gps");
-	auto task3 = taskSet.addTask(10, 1.5, "planner");
-	auto task4 = taskSet.addTask(5, 1.4, "controller");
-	auto task5 = taskSet.addTask(20, 3, "act");
+	auto task1 = taskSet.addTask(5, 3, "imu");
+	auto task2 = taskSet.addTask(10, 2, "gps");
+	auto task3 = taskSet.addTask(10, 2, "planner");
+	auto task4 = taskSet.addTask(5, 2, "controller");
+	auto task5 = taskSet.addTask(20, 10, "act");
+
+	task5->bcet = 5;
+	task1->bcet = 1;
 	//auto task6 = taskSet.addTask(40, 5, "train");
 	//auto task7 = taskSet.addTask(160, 50, "independent");
 
@@ -94,8 +97,8 @@ taskset3()
 	scheduling::scheduleDAG(dags[id],n_processors,"schedule_test.tex", true);
 	dags[id].getOriginatingTaskset()->toTikz("cool.tex");
 	std::cout << dags[id].getNodeInfo() << std::endl;
-	std::cout << dags[id].getLatencyInfo( { 0,0,4 }) << std::endl;
-	dags[id].getLatencyInfoIterative( { 1,1,5});
+	std::cout << dags[id].getLatencyInfo( { 0,4 }) << std::endl;
+	//dags[id].getLatencyInfoIterative( { 1,5,3,4});
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
