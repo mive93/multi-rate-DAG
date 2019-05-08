@@ -22,6 +22,8 @@ struct PlainDAG
 
 	std::vector<float> syncTimes;
 
+	DAG::NodeInfo nodeInfo;
+
 };
 
 namespace dp
