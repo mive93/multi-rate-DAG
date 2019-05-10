@@ -13,8 +13,16 @@
 Eigen::VectorXf
 maxProduct(const Eigen::MatrixXi& A, const Eigen::VectorXf& b);
 
+
+Eigen::VectorXf
+maxProductFloat(const Eigen::MatrixXf& A, const Eigen::VectorXf& b);
+
 int
 maxProductVector(const Eigen::VectorXi& a, const Eigen::VectorXf& b);
+
+
+Eigen::MatrixXf
+maxProductMatrix(const Eigen::MatrixXf& A, const Eigen::MatrixXf& B);
 
 
 

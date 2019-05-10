@@ -39,6 +39,7 @@ public:
 	};
 
 	using DAGMatrix = Eigen::Matrix<int, -1, -1>;
+	using DAGMatrixFloat = Eigen::Matrix<float, -1, -1>;
 
 	DAG();
 
@@ -94,7 +95,7 @@ public:
 	void
 	fromDAGMatrix(const DAGMatrix& mat);
 
-	Eigen::Matrix<int, -1, -1>
+	DAGMatrix
 	getJitterMatrix() const;
 
 	bool
@@ -143,7 +144,7 @@ public:
 	}
 
 	LatencyInfo
-	getLatencyInfo(std::vector<unsigned> dataChain) const;
+	getLatencyInfo(const std::vector<unsigned>& dataChain) const;
 
 	LatencyInfo 
 	getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const;
@@ -160,6 +161,12 @@ public:
 		originatingTaskset_ = originatingTaskset;
 	}
 
+	const DAGMatrixFloat&
+	getPartiallySerialized() const
+	{
+		return partiallySerialized_;
+	}
+
 private:
 
 	void
@@ -174,6 +181,8 @@ private:
 	DAGMatrix dagMatrix_;
 	DAGMatrix ancestors_;
 	DAGMatrix definitelySerialized_;
+
+	DAGMatrixFloat partiallySerialized_;
 
 	std::vector<std::shared_ptr<Node>> nodes_;
 	std::vector<Edge> edges_;

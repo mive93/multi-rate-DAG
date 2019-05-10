@@ -10,6 +10,7 @@
 #include <eigen3/Eigen/Core>
 
 #include <eigen3/Eigen/Dense>
+#include <iomanip>
 
 #include <iostream>
 
@@ -177,8 +178,7 @@ DAG::toTikz(std::string filename) const
 	//inserting edges
 	tikz_file << "\\path[->] \n";
 	for (const auto& edge : edges_)
-		tikz_file << "(" << edge.from->uniqueId << ") edge node {} (" << edge.to->uniqueId
-				<< ")\n";
+		tikz_file << "(" << edge.from->uniqueId << ") edge node {} (" << edge.to->uniqueId << ")\n";
 	tikz_file << ";\n";
 
 	//ending tikz figure
@@ -305,9 +305,10 @@ DAG::getStart() const
 
 DAG::DAG(const DAG& other) :
 		dagMatrix_(other.getDAGMatrix()), ancestors_(other.getAncestors()), definitelySerialized_(
-				other.getDefinitelySerialized()), nodes_(other.getNodes()), edges_(
-				other.getEdges()), nodeInfo_(other.nodeInfo_), start_(other.getStart()), end_(
-				other.getEnd()), period_(other.period_), originatingTaskset_(other.getOriginatingTaskset())
+				other.getDefinitelySerialized()), partiallySerialized_(
+				other.getPartiallySerialized()), nodes_(other.getNodes()), edges_(other.getEdges()), nodeInfo_(
+				other.nodeInfo_), start_(other.getStart()), end_(other.getEnd()), period_(
+				other.period_), originatingTaskset_(other.getOriginatingTaskset())
 {
 }
 
@@ -442,6 +443,27 @@ DAG::createNodeInfo()
 		}
 	}
 
+	partiallySerialized_ = definitelySerialized_.cast<float>();
+
+	const auto& nI = nodeInfo_;
+
+	for (unsigned from = 0; from < n; from++)
+	{
+		for (unsigned to = 0; to < n; to++)
+		{
+			if (definitelySerialized_.coeff(to, from) == 1)
+				continue;
+
+			if (nI.lft[from] > nI.est[to] && nI.lft[from] < nI.lst[to])
+			{
+				float ar = (float) (nI.lst[to] - nI.lft[from]) / (float)(nI.lst[to] - nI.est[to]);
+				float aw = ar * (nI.lst[to] - nI.est[to]) / (nI.lft[to] - nI.eft[to]);
+//				std::cout << std::setprecision(7) << from << "->" << to << ": " << nI.lst[to] << " - " << nI.lft[from] << " / " << nI.lst[to]  << " - " << nI.est[to] << " = " << ar << std::endl;
+				partiallySerialized_.coeffRef(to, from) = aw;
+			}
+		}
+	}
+
 }
 
 std::ostream &
@@ -457,77 +479,73 @@ operator <<(std::ostream &out, const DAG::NodeInfo &info)
 	return out;
 }
 
-LatencyInfo 
+LatencyInfo
 DAG::getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const
 {
 
 	LatencyInfo info;
-	info.reactionTime = 0; 
+	info.reactionTime = 0;
 	info.maxLatency = 0;
 	info.minLatency = 0; // Not implemented yet
 
-
-
 	std::map<unsigned, std::vector<unsigned>> groupInstances;
 
-	for(size_t i=0; i < nodes_.size(); i++)
+	for (size_t i = 0; i < nodes_.size(); i++)
 		if (nodes_[i]->groupId != 0 && nodes_[i]->groupId != 667 && nodes_[i]->groupId != 666)
 			groupInstances[nodes_[i]->groupId].push_back(i);
 
-	std::cout<<"\twc\tbc\test\tlst\teft\tlft"<<std::endl;
-	std::cout<<"---------------------------------------------------"<<std::endl;
-	for( const auto& sm_pair : dataChain )
+	std::cout << "\twc\tbc\test\tlst\teft\tlft" << std::endl;
+	std::cout << "---------------------------------------------------" << std::endl;
+	for (const auto& sm_pair : dataChain)
 	{
-		for( const auto& sc_pair : groupInstances[sm_pair] )
+		for (const auto& sc_pair : groupInstances[sm_pair])
 		{
-			std::cout<<nodes_[sc_pair]->shortName<< " |\t"<< 
-				nodes_[sc_pair]->wcet<<"\t"<<nodes_[sc_pair]->bcet
-				<< "\t"<<  nodeInfo_.est[sc_pair]<< "\t"<< 
-				nodeInfo_.lst[sc_pair]<<"\t"
-				<<  nodeInfo_.eft[sc_pair]<< "\t"<< 
-				nodeInfo_.lft[sc_pair]<<std::endl;
+			std::cout << nodes_[sc_pair]->shortName << " |\t" << nodes_[sc_pair]->wcet << "\t"
+					<< nodes_[sc_pair]->bcet << "\t" << nodeInfo_.est[sc_pair] << "\t"
+					<< nodeInfo_.lst[sc_pair] << "\t" << nodeInfo_.eft[sc_pair] << "\t"
+					<< nodeInfo_.lft[sc_pair] << std::endl;
 		}
-		std::cout<<"---------------------------------------------------"<<std::endl;
+		std::cout << "---------------------------------------------------" << std::endl;
 	}
 
 	float begin, end;
 	float epsilon = 1e-6;
 
-	for(auto startNode: groupInstances[dataChain[0]])
+	for (auto startNode : groupInstances[dataChain[0]])
 	{
 		begin = nodeInfo_.est[startNode];
 		end = begin;
 		int k;
-		for(size_t j = 1; j< dataChain.size(); j++)
+		for (size_t j = 1; j < dataChain.size(); j++)
 		{
 			k = -1;
 			int khp = 0;
-			while(true)
+			while (true)
 			{
-				for(auto instance: groupInstances[dataChain[j]] )
+				for (auto instance : groupInstances[dataChain[j]])
 				{
-					if(nodeInfo_.est[instance]+khp*(period_+epsilon) > end)
+					if (nodeInfo_.est[instance] + khp * (period_ + epsilon) > end)
 					{
 						k = instance;
 						break;
 					}
 				}
-				if(k > -1 )
+				if (k > -1)
 					break;
-				khp++;				
+				khp++;
 			}
-			end = nodeInfo_.lst[k]+khp*period_ + nodes_[k]->wcet;
+			end = nodeInfo_.lst[k] + khp * period_ + nodes_[k]->wcet;
 		}
 
-		if(end-begin > info.reactionTime)
+		if (end - begin > info.reactionTime)
 		{
-			info.reactionTime = end-begin;
+			info.reactionTime = end - begin;
 			info.reactionTimePair.first = nodes_[startNode]->uniqueId;
 			info.reactionTimePair.second = nodes_[k]->uniqueId;
 		}
 	}
 
-	for(auto startNode: groupInstances[dataChain[0]])
+	for (auto startNode : groupInstances[dataChain[0]])
 	{
 		int tau = dataChain[0];
 		float rb = nodeInfo_.est[startNode];
@@ -536,37 +554,36 @@ DAG::getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const
 		float bc = 0;
 		begin = rb, end = rb;
 		int prev_s;
-		
-		std::cout<<"Begin ------";
-		std::cout<<"\ttau: "<<tau<<"\trb: "<<rb<<"\tre: "<<re
-			<<"\twc: "<<wc<<"\tbc: "<<bc<<"\tbegin: "<<
-			begin<<"\tend: "<<end<<std::endl;
 
-		for(size_t j = 0; j< dataChain.size(); j++)
+		std::cout << "Begin ------";
+		std::cout << "\ttau: " << tau << "\trb: " << rb << "\tre: " << re << "\twc: " << wc
+				<< "\tbc: " << bc << "\tbegin: " << begin << "\tend: " << end << std::endl;
+
+		for (size_t j = 0; j < dataChain.size(); j++)
 		{
 			prev_s = -1;
 			int l = -1, s = -1;
 			int lhp = 0, shp = 0, prevshp = 0;
-			while(true)
+			while (true)
 			{
-				for(auto instance: groupInstances[tau] )
+				for (auto instance : groupInstances[tau])
 				{
-					if(nodeInfo_.lst[instance]+lhp*(period_+epsilon) > rb+bc)
+					if (nodeInfo_.lst[instance] + lhp * (period_ + epsilon) > rb + bc)
 					{
 						l = instance;
 						break;
 					}
 				}
-				if(l > -1 )
+				if (l > -1)
 					break;
-				lhp++;				
+				lhp++;
 			}
 
-			while(true)
+			while (true)
 			{
-				for(auto instance: groupInstances[tau] )
+				for (auto instance : groupInstances[tau])
 				{
-					if(nodeInfo_.est[instance]+shp*(period_+epsilon) > re+wc)
+					if (nodeInfo_.est[instance] + shp * (period_ + epsilon) > re + wc)
 					{
 						s = instance;
 						break;
@@ -574,58 +591,57 @@ DAG::getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const
 					prev_s = instance;
 					prevshp = shp;
 				}
-				if(s > -1)
+				if (s > -1)
 					break;
 				shp++;
 			}
-			
-			if(!( nodeInfo_.est[s] + shp * period_ > nodeInfo_.est[l] + lhp * period_) || prev_s < 0)
+
+			if (!(nodeInfo_.est[s] + shp * period_ > nodeInfo_.est[l] + lhp * period_)
+					|| prev_s < 0)
 			{
-				std::cout<<"Problem, data never reach the end of the chain"<<std::endl;
+				std::cout << "Problem, data never reach the end of the chain" << std::endl;
 				end = begin;
 				break;
 			}
 
 			//end = std::min(re+wc, nodeInfo_.lst[s-1]+prevshp*period_+nodes_[s]->wcet);
-			end = nodes_[s]->wcet + wc +std::min(re,nodeInfo_.lst[s-1]+prevshp*period_);
+			end = nodes_[s]->wcet + wc + std::min(re, nodeInfo_.lst[s - 1] + prevshp * period_);
 
-			std::cout<<"\t"<<j<<":";
-			std::cout<<"\ttau: "<<tau<<"\trb: "<<rb<<"\tre: "<<re
-				<<"\twc: "<<wc<<"\tbc: "<<bc<<"\tbegin: "
-				<<begin<<"\tend: "<<end;
-			std::cout<<"\tl: "<<nodes_[l]->shortName<<"\tlhp: "<<
-				lhp<<"\ts: "<<nodes_[s]->shortName<<"\tshp: "
-				<<shp<<"\ts-1: "<<nodes_[prev_s]->shortName
-				<<"\tprevshp: "<<prevshp<<std::endl;
+			std::cout << "\t" << j << ":";
+			std::cout << "\ttau: " << tau << "\trb: " << rb << "\tre: " << re << "\twc: " << wc
+					<< "\tbc: " << bc << "\tbegin: " << begin << "\tend: " << end;
+			std::cout << "\tl: " << nodes_[l]->shortName << "\tlhp: " << lhp << "\ts: "
+					<< nodes_[s]->shortName << "\tshp: " << shp << "\ts-1: "
+					<< nodes_[prev_s]->shortName << "\tprevshp: " << prevshp << std::endl;
 
-			rb = std::max(nodeInfo_.est[l]+lhp*period_, rb+bc);
+			rb = std::max(nodeInfo_.est[l] + lhp * period_, rb + bc);
 			re = nodeInfo_.lst[s] + shp * period_;
 			bc = nodes_[s]->bcet;
 			wc = nodes_[s]->wcet;
-			if(j < dataChain.size()-1)
+			if (j < dataChain.size() - 1)
 			{
-				tau = dataChain[j+1];
+				tau = dataChain[j + 1];
 			}
 		}
 
-		std::cout<<"End ------";
-		std::cout<<"\trb: "<<rb<<"\tre: "<<re<<"\tbegin: "<<begin<<
-			"\tend: "<<end<<"\t\tlatency: "<<end-begin<<std::endl<<std::endl;
+		std::cout << "End ------";
+		std::cout << "\trb: " << rb << "\tre: " << re << "\tbegin: " << begin << "\tend: " << end
+				<< "\t\tlatency: " << end - begin << std::endl << std::endl;
 
-		if(end-begin > info.maxLatency)
+		if (end - begin > info.maxLatency)
 		{
-			info.maxLatency = end-begin;
+			info.maxLatency = end - begin;
 			info.maxLatencyPair.first = nodes_[startNode]->uniqueId;
 			info.maxLatencyPair.second = nodes_[prev_s]->uniqueId;
 		}
 	}
-	
-	std::cout<<info<<std::endl;
+
+	std::cout << info << std::endl;
 	return info;
 }
 
 LatencyInfo
-DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
+DAG::getLatencyInfo(const std::vector<unsigned>& dataChain) const
 {
 	unsigned n = nodes_.size();
 
@@ -645,10 +661,20 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 	DAGMatrix B = DAGMatrix::Ones(n, n);
 	DAGMatrix C = DAGMatrix::Ones(n, n);
 
+	DAGMatrixFloat Af;
+	DAGMatrixFloat Bf;
+	if (groupChain.empty())
+	{
+		Af = partiallySerialized_;
+		Bf = DAGMatrixFloat::Ones(n, n);
+	}
+
 	unsigned hpCounter = 0;
 
 	for (auto g : groupChain)
 	{
+		Af = A.cast<float>();
+		Bf = B.cast<float>();
 		auto diag = groupMat.col(g).asDiagonal();
 		DAGMatrix Anew = definitelySerialized_ * diag * A;
 		if (Anew.isZero())
@@ -664,9 +690,27 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 		convertToBooleanMat(B);
 	}
 
+	if (!groupChain.empty())
+	{
+		auto diag = groupMat.cast<float>().col(groupChain.back()).asDiagonal();
+		DAGMatrixFloat Anew = maxProductMatrix(partiallySerialized_ * diag, Af);
+		if (Anew.isZero(1e-6))
+		{
+			Af = Bf;
+			Bf = DAGMatrixFloat::Ones(n, n);
+			Anew = maxProductMatrix(partiallySerialized_ * diag, Af);
+		}
+		Bf = maxProductMatrix(DAGMatrixFloat::Ones(n, n) * diag, Af).array().max(
+				maxProductMatrix(partiallySerialized_ * diag, Bf).array());
+		Af = Anew;
+	}
+
 	A = groupMat.col(endGroup).asDiagonal() * A;
 	B = groupMat.col(endGroup).asDiagonal() * B;
 	C = groupMat.col(endGroup).asDiagonal() * C;
+
+	Af = groupMat.cast<float>().col(endGroup).asDiagonal() * Af;
+	Bf = groupMat.cast<float>().col(endGroup).asDiagonal() * Bf;
 
 	convertToBooleanMat(A);
 	convertToBooleanMat(B);
@@ -676,7 +720,6 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 		if (groupMat.col(startGroup)[k] == 1)
 			starters.push_back(k);
 
-
 	LatencyInfo info;
 	info.reactionTime = 0;
 	info.maxLatency = 0;
@@ -684,24 +727,25 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 
 	for (auto it = starters.begin(); it != starters.end(); it++)
 	{
-		Eigen::VectorXi temp;
+		Eigen::VectorXf temp;
 		temp.resize(3 * n);
-		temp << A.col(*it), B.col(*it), C.col(*it);
+		temp << A.cast<float>().col(*it), B.cast<float>().col(*it), C.cast<float>().col(*it);
 
-		Eigen::VectorXi tempNext;
+		Eigen::VectorXf tempNext;
 		tempNext.resize(3 * n);
 
 		auto next = std::next(it);
 		if (next == starters.end())
 		{
-			tempNext << Eigen::VectorXi::Zero(n, 1), A.col(starters.front()), B.col(
+			tempNext << Eigen::VectorXf::Zero(n, 1), Af.col(starters.front()), Bf.col(
 					starters.front());
 		}
 		else
 		{
-			tempNext << A.col(*next), B.col(*next), C.col(*next);
+			tempNext << Af.col(*next), Bf.col(*next), C.cast<float>().col(*next);
 		}
 
+		//Reaction time
 		unsigned first = 0;
 		for (; first < 3 * n; first++)
 			if (temp[first] == 1)
@@ -715,17 +759,20 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 			info.reactionTimePair = std::make_pair(*it, first % n);
 		}
 
+		//Data Age
 		temp -= tempNext;
-		convertToBooleanVec(temp);
+		temp = ((temp.array() > 0).matrix().cast<float>().array() * temp.array()).matrix();
 		if (temp.isZero())
 			continue;
 
 		unsigned last = 3 * n - 1;
 		for (; last >= 0; last--)
-			if (temp[last] == 1)
+			if (temp[last] > 0)
 				break;
 
-		diff = (hpCounter + (last / n)) * period_ + nodeInfo_.lft[last % n] - nodeInfo_.est[*it];
+		float val = temp[last] * (nodeInfo_.lft[last % n] - nodeInfo_.eft[last % n]);
+
+		diff = (hpCounter + (last / n)) * period_ + nodeInfo_.eft[last % n] + val - nodeInfo_.est[*it];
 		if (diff > info.maxLatency)
 		{
 			info.maxLatency = diff;
