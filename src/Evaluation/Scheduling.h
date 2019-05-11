@@ -24,55 +24,60 @@
 
 #define TIMER_STOP TIMER_STOP_C(COL_CYANB)
 
-struct ScheduleInfos
+
+namespace scheduling
 {
-	std::shared_ptr<Node> n;
-	double est;
-	double lst;
-	double eft;
-	double lft;
-	std::vector<std::shared_ptr<ScheduleInfos>> pred;
-	std::vector<std::shared_ptr<ScheduleInfos>> succ;
-};
 
-using ScheduleInfosVec = std::vector<std::shared_ptr<ScheduleInfos>>;
+    struct ScheduleInfo
+    {
+        std::shared_ptr<Node> n;
+        double est;
+        double lst;
+        double eft;
+        double lft;
+        std::vector<std::shared_ptr<ScheduleInfo>> pred;
+        std::vector<std::shared_ptr<ScheduleInfo>> succ;
+    };
 
-bool
-compareSchedulingInfos(const std::shared_ptr<ScheduleInfos> a,
-		const std::shared_ptr<ScheduleInfos> b);
+    using ScheduleInfoVec = std::vector<std::shared_ptr<ScheduleInfo>>;
 
-bool
-compareSchedulingInfosESTdescending(const std::shared_ptr<ScheduleInfos> a,
-		const std::shared_ptr<ScheduleInfos> b);
+    bool
+    compareSchedulingInfo(const std::shared_ptr<ScheduleInfo> a,
+            const std::shared_ptr<ScheduleInfo> b);
 
-void
-printSchedule(const std::vector<std::vector<std::shared_ptr<Node>>>& processors_schedule);
+    bool
+    compareSchedulingInfoESTdescending(const std::shared_ptr<ScheduleInfo> a,
+            const std::shared_ptr<ScheduleInfo> b);
 
-void
-scheduleToTikz(const std::string &filename,
-		const std::vector<std::vector<std::shared_ptr<Node>>> &processors_schedule,
-		const double period);
+    void
+    printSchedule(const std::vector<std::vector<std::shared_ptr<Node>>>& processorSchedule);
 
-ScheduleInfosVec
-createScheduleInfos(const DAG &dag, unsigned &last_uniqueId, bool verbose = false);
+    void
+    scheduleToTikz(const std::string &filename,
+            const std::vector<std::vector<std::shared_ptr<Node>>> &processorSchedule,
+            const double period);
 
-void
-scheduleIdleTask(const int proc,
-		std::vector<std::vector<std::shared_ptr<Node>>> &processors_schedule, const double delta,
-		unsigned &last_uniqueId);
-void
-scheduleTask(const std::shared_ptr<ScheduleInfos> &task, int proc,
-		std::vector<double> &processor_usage, ScheduleInfosVec &nodes_to_sched,
-		ScheduleInfosVec &ready,
-		std::vector<std::vector<std::shared_ptr<Node>>> &processors_schedule, const double t,
-		const double epsilon);
+    ScheduleInfoVec
+    createScheduleInfo(const DAG &dag, unsigned &lastUniqueId, bool verbose = false);
 
-double
-computeDelta(const std::vector<double> &processor_usage, const ScheduleInfosVec &nodes_to_sched,
-		const ScheduleInfosVec &ready, const double t, const double epsilon);
+    void
+    scheduleIdleTask(const int proc,
+            std::vector<std::vector<std::shared_ptr<Node>>> &processorSchedule, const double delta,
+            unsigned &lastUniqueId);
+    void
+    scheduleTask(const std::shared_ptr<ScheduleInfo> &task, int proc,
+            std::vector<double> &processorUsage, ScheduleInfoVec &nodesToSched,
+            ScheduleInfoVec &ready,
+            std::vector<std::vector<std::shared_ptr<Node>>> &processorSchedule, const double t,
+            const double epsilon);
 
-bool
-scheduleDAG(const DAG &dag, const unsigned n_proc, const bool verbose = false,
-		const std::string &filename = "");
+    double
+    computeDelta(const std::vector<double> &processorUsage, const ScheduleInfoVec &nodesToSched,
+            const ScheduleInfoVec &ready, const double t, const double epsilon);
 
+    bool
+    scheduleDAG(const DAG &dag, const unsigned nProc,
+            const std::string &filename = "", const bool verbose = false);
+
+}
 #endif /*SCHEDULING_H*/

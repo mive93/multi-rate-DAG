@@ -4,12 +4,15 @@
  *  Created on: Apr 1, 2019
  *      Author: mirco
  */
-#include <DAG/MaxProduct.h>
+#include <DAG/IntervalPropagation.h>
+#include "DAG/MaxProduct.h"
+#include "MultiRate/MultiRateTaskset.h"
 #include "DAG/DAG.h"
 #include <cmath>
 #include <eigen3/Eigen/Core>
 
 #include <eigen3/Eigen/Dense>
+#include <iomanip>
 
 #include <iostream>
 
@@ -170,15 +173,14 @@ DAG::toTikz(std::string filename) const
 						<< ") at (" << x << "," << y << ") {" << node->shortName << "};\n";
 			else
 				tikz_file << "\\node[state] (" << node->uniqueId << ") at (" << x << "," << y
-						<< ") {$" << node->shortName << "$};\n";
+						<< ") {$" << node->uniqueId << "$};\n";
 		}
 	}
 
 	//inserting edges
 	tikz_file << "\\path[->] \n";
 	for (const auto& edge : edges_)
-		tikz_file << "(" << edge.from->uniqueId << ") edge node {} (" << edge.to->uniqueId
-				<< ")\n";
+		tikz_file << "(" << edge.from->uniqueId << ") edge node {} (" << edge.to->uniqueId << ")\n";
 	tikz_file << ";\n";
 
 	//ending tikz figure
@@ -269,6 +271,7 @@ DAG::createStartEnd()
 	start_->deadline = 0;
 	start_->offset = 0;
 	start_->uniqueId = 0;
+	start_->groupId = 668;
 	start_->name = "start";
 	start_->shortName = "S";
 
@@ -278,6 +281,7 @@ DAG::createStartEnd()
 	end_->deadline = period_;
 	end_->offset = period_;
 	end_->uniqueId = 10000;
+	end_->groupId = 668;
 	end_->name = "end";
 	end_->shortName = "E";
 
@@ -305,9 +309,13 @@ DAG::getStart() const
 
 DAG::DAG(const DAG& other) :
 		dagMatrix_(other.getDAGMatrix()), ancestors_(other.getAncestors()), definitelySerialized_(
-				other.getDefinitelySerialized()), nodes_(other.getNodes()), edges_(
+				other.getDefinitelySerialized()), partiallySerialized_(
+				other.getPartiallySerialized()), partiallySerializedReact_(
+				other.getPartiallySerializedReact()), partiallySerializedReactBInit_(
+				other.getPartiallySerializedReactBInit()), nodes_(other.getNodes()), edges_(
 				other.getEdges()), nodeInfo_(other.nodeInfo_), start_(other.getStart()), end_(
-				other.getEnd()), period_(other.period_), originatingTaskset_(other.getOriginatingTaskset())
+				other.getEnd()), period_(other.period_), originatingTaskset_(
+				other.getOriginatingTaskset())
 {
 }
 
@@ -442,6 +450,60 @@ DAG::createNodeInfo()
 		}
 	}
 
+	partiallySerialized_ = definitelySerialized_.cast<float>();
+
+	const auto& nI = nodeInfo_;
+
+	for (unsigned from = 0; from < n; from++)
+	{
+		for (unsigned to = 0; to < n; to++)
+		{
+			if (definitelySerialized_.coeff(to, from) == 1)
+				continue;
+
+			if (nI.lft[from] > nI.est[to] && nI.lft[from] < nI.lst[to])
+			{
+				float aw = (nI.lst[to] - nI.lft[from]) / (nI.lft[to] - nI.eft[to]);
+				partiallySerialized_.coeffRef(to, from) = aw;
+			}
+		}
+	}
+
+	partiallySerializedReactBInit_ = DAGMatrixFloat::Zero(n, n);
+	partiallySerializedReact_ = definitelySerialized_.cast<float>();
+	for (unsigned from = 2; from < n; from++)
+	{
+		for (unsigned to = 2; to < n; to++)
+		{
+			if (nodes_.at(to)->groupId != nodes_.at(to - 1)->groupId)
+			{
+				if (nodes_.at(to - 1)->groupId >= 666)
+					continue;
+
+				if (dagMatrix_.coeff(to - 1, from) == 1)
+					continue;
+
+				float ar = (nI.lft[from] - nI.est[to - 1]);
+				if (nI.lst[from] - nI.est[from] != 0)
+					ar /= (nI.lst[from] - nI.est[from]);
+				unsigned firstInstance = originatingTaskset_->getNodes()[nodes_.at(to - 1)->groupId
+						- 1]->nodes.front()->uniqueId;
+				partiallySerializedReactBInit_.coeffRef(firstInstance, from) = std::max(
+						std::min(ar, 1.0f), 0.0f);
+				continue;
+			}
+
+			if (nI.eft[from] < nI.est[to])
+			{
+				float ar = (nI.lft[from] - nI.est[to - 1]);
+
+				if (nI.lst[from] - nI.est[from] > 0)
+					ar /= (nI.lst[from] - nI.est[from]);
+				partiallySerializedReact_.coeffRef(to, from) = std::max(std::min(ar, 1.0f), 0.0f);
+			}
+		}
+	}
+
 }
 
 std::ostream &
@@ -458,7 +520,7 @@ operator <<(std::ostream &out, const DAG::NodeInfo &info)
 }
 
 LatencyInfo
-DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
+DAG::getLatencyInfo(const std::vector<unsigned>& dataChain) const
 {
 	unsigned n = nodes_.size();
 
@@ -478,10 +540,39 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 	DAGMatrix B = DAGMatrix::Ones(n, n);
 	DAGMatrix C = DAGMatrix::Ones(n, n);
 
+	DAGMatrixFloat Af;
+	DAGMatrixFloat Bf;
+	if (groupChain.empty())
+	{
+		Af = partiallySerialized_;
+		Bf = DAGMatrixFloat::Ones(n, n);
+	}
+
+	DAGMatrixFloat definitelySerializedNextOnly = definitelySerialized_.cast<float>();
+	for (unsigned from = 0; from < n; from++)
+	{
+		for (unsigned to = 1; to < n; to++)
+		{
+			if (nodes_[to]->groupId != nodes_[to - 1]->groupId)
+				continue;
+
+			if (definitelySerialized_.coeff(to - 1, from) == 1)
+				definitelySerializedNextOnly.coeffRef(to, from) = 0;
+		}
+	}
+
+	DAGMatrixFloat BInit = (partiallySerializedReactBInit_.array() > 0).matrix().cast<float>();
+
+	DAGMatrixFloat AfReact = partiallySerializedReact_;
+	DAGMatrixFloat BfReact = partiallySerializedReactBInit_;
+
 	unsigned hpCounter = 0;
+	unsigned hpCounterReact = 0;
 
 	for (auto g : groupChain)
 	{
+		Af = A.cast<float>();
+		Bf = B.cast<float>();
 		auto diag = groupMat.col(g).asDiagonal();
 		DAGMatrix Anew = definitelySerialized_ * diag * A;
 		if (Anew.isZero())
@@ -497,9 +588,46 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 		convertToBooleanMat(B);
 	}
 
+	for (auto g : groupChain)
+	{
+		auto diag = groupMat.cast<float>().col(g).asDiagonal();
+		DAGMatrixFloat Anew = maxProductMatrix(definitelySerializedNextOnly * diag, AfReact);
+		if (Anew.isZero(1e-6))
+		{
+			AfReact = BfReact;
+			BfReact = BInit;
+			Anew = maxProductMatrix(definitelySerializedNextOnly * diag, AfReact);
+			hpCounterReact++;
+		}
+		BfReact = maxProductMatrix(BInit * diag, AfReact).array().max(
+				maxProductMatrix(definitelySerializedNextOnly * diag, BfReact).array()).matrix();
+		AfReact = Anew;
+	}
+
+	if (!groupChain.empty())
+	{
+		auto diag = groupMat.cast<float>().col(groupChain.back()).asDiagonal();
+		DAGMatrixFloat Anew = maxProductMatrix(partiallySerialized_ * diag, Af);
+		if (Anew.isZero(1e-6))
+		{
+			Af = Bf;
+			Bf = DAGMatrixFloat::Ones(n, n);
+			Anew = maxProductMatrix(partiallySerialized_ * diag, Af);
+		}
+		Bf = maxProductMatrix(DAGMatrixFloat::Ones(n, n) * diag, Af).array().max(
+				maxProductMatrix(partiallySerialized_ * diag, Bf).array());
+		Af = Anew;
+	}
+
 	A = groupMat.col(endGroup).asDiagonal() * A;
 	B = groupMat.col(endGroup).asDiagonal() * B;
 	C = groupMat.col(endGroup).asDiagonal() * C;
+
+	Af = groupMat.cast<float>().col(endGroup).asDiagonal() * Af;
+	Bf = groupMat.cast<float>().col(endGroup).asDiagonal() * Bf;
+
+	AfReact = groupMat.cast<float>().col(endGroup).asDiagonal() * AfReact;
+	BfReact = groupMat.cast<float>().col(endGroup).asDiagonal() * BfReact;
 
 	convertToBooleanMat(A);
 	convertToBooleanMat(B);
@@ -509,7 +637,6 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 		if (groupMat.col(startGroup)[k] == 1)
 			starters.push_back(k);
 
-
 	LatencyInfo info;
 	info.reactionTime = 0;
 	info.maxLatency = 0;
@@ -517,53 +644,161 @@ DAG::getLatencyInfo(std::vector<unsigned> dataChain) const
 
 	for (auto it = starters.begin(); it != starters.end(); it++)
 	{
-		Eigen::VectorXi temp;
+		Eigen::VectorXf temp;
 		temp.resize(3 * n);
-		temp << A.col(*it), B.col(*it), C.col(*it);
+		temp << A.cast<float>().col(*it), B.cast<float>().col(*it), C.cast<float>().col(*it);
 
-		Eigen::VectorXi tempNext;
+		Eigen::VectorXf tempReact;
+		tempReact.resize(2 * n);
+		tempReact << AfReact.col(*it), BfReact.col(*it);
+
+		Eigen::VectorXf tempNext;
 		tempNext.resize(3 * n);
 
 		auto next = std::next(it);
 		if (next == starters.end())
 		{
-			tempNext << Eigen::VectorXi::Zero(n, 1), A.col(starters.front()), B.col(
+			tempNext << Eigen::VectorXf::Zero(n, 1), Af.col(starters.front()), Bf.col(
 					starters.front());
 		}
 		else
 		{
-			tempNext << A.col(*next), B.col(*next), C.col(*next);
+			tempNext << Af.col(*next), Bf.col(*next), C.cast<float>().col(*next);
 		}
 
-		unsigned first = 0;
-		for (; first < 3 * n; first++)
-			if (temp[first] == 1)
-				break;
-
-		float diff = (hpCounter + (first / n)) * period_ + nodeInfo_.lft[first % n]
-				- nodeInfo_.est[*it];
-		if (diff > info.reactionTime)
+		//Reaction time
+		for (unsigned r = 0; r < 2 * n; r++)
 		{
-			info.reactionTime = diff;
-			info.reactionTimePair = std::make_pair(*it, first % n);
+			if (tempReact[r] > 1e-5)
+			{
+				float diff = (hpCounterReact + (r / n)) * period_ + nodeInfo_.lft[r % n]
+						- (nodeInfo_.est[*it]
+								+ (1 - tempReact[r]) * (nodeInfo_.lst[*it] - nodeInfo_.est[*it]));
+				if (diff > info.reactionTime)
+				{
+					info.reactionTime = diff;
+					info.reactionTimePair = std::make_pair(*it, r % n);
+				}
+			}
 		}
 
+		//Data Age
 		temp -= tempNext;
-		convertToBooleanVec(temp);
+		temp = ((temp.array() > 0).matrix().cast<float>().array() * temp.array()).matrix();
 		if (temp.isZero())
 			continue;
 
 		unsigned last = 3 * n - 1;
 		for (; last >= 0; last--)
-			if (temp[last] == 1)
+			if (temp[last] > 0)
 				break;
 
-		diff = (hpCounter + (last / n)) * period_ + nodeInfo_.lft[last % n] - nodeInfo_.est[*it];
+		float val = temp[last] * (nodeInfo_.lft[last % n] - nodeInfo_.eft[last % n]);
+
+		float diff = (hpCounter + (last / n)) * period_ + nodeInfo_.eft[last % n] + val
+				- nodeInfo_.est[*it];
 		if (diff > info.maxLatency)
 		{
 			info.maxLatency = diff;
 			info.maxLatencyPair = std::make_pair(*it, last % n);
 		}
 	}
+
+	getMinLatency(dataChain, info);
 	return info;
 }
+
+
+LatencyInfo
+DAG::getMinLatency(const std::vector<unsigned>& dataChain, LatencyInfo& latency) const
+{
+
+	unsigned maxGroup = 0;
+	for (const auto& g : dataChain)
+		if (g > maxGroup)
+			maxGroup = g;
+
+	std::vector<unsigned> groupChain(dataChain.begin(), std::prev(dataChain.end()));
+	std::reverse(groupChain.begin(), groupChain.end());
+
+	auto groupMat = getGroupMatrix(maxGroup + 1);
+
+	std::vector<unsigned> starters = getIdsFromGroup(groupMat, dataChain.back());
+
+	const auto& info = nodeInfo_;
+	latency.minLatency = std::numeric_limits<float>::max();
+	for (auto starter : starters)
+	{
+		IntervalPropagation prop;
+		prop.startInterval = std::make_pair(nodeInfo_.eft[starter], nodeInfo_.lft[starter]);
+		prop.interval = prop.startInterval;
+
+
+		prop.shiftWriteRead(info.bc[starter], info.lst[starter]);
+		unsigned currentReadNode = starter;
+
+		for (auto group : groupChain)
+		{
+			auto nodes = getIdsFromGroup(groupMat, group);
+			std::reverse(nodes.begin(), nodes.end());
+
+			bool found = false;
+			for (auto node : nodes)
+			{
+				//Exclude if precedence from currentReadNode to node
+				if (dagMatrix_.coeff(node, currentReadNode) == 1 || node == currentReadNode)
+					continue;
+				if (!prop.canReact(info.eft[node], info.lft[node]))
+					continue;
+
+
+				prop.react(info.eft[node], info.lft[node]);
+				prop.shiftWriteRead(info.bc[node], info.lst[node]);
+				currentReadNode = node;
+				found = true;
+				break;
+			}
+
+			if (!found)
+			{
+				prop.addHyperPeriod(period_);
+				for (auto node : nodes)
+				{
+					if (!prop.canReact(info.eft[node], info.lft[node]))
+						continue;
+
+					prop.react(info.eft[node], info.lft[node]);
+					prop.shiftWriteRead(info.bc[node], info.lst[node]);
+					currentReadNode = node;
+					break;
+				}
+			}
+
+		}
+
+
+		float diff = prop.startInterval.second - prop.interval.second;
+		if (diff < latency.minLatency)
+		{
+			latency.minLatency = diff;
+			latency.minLatencyPair = std::make_pair(currentReadNode, starter);
+		}
+
+	}
+
+	return latency;
+
+}
+
+std::vector<unsigned>
+DAG::getIdsFromGroup(const DAGMatrix& groupMat, unsigned group) const
+{
+	std::vector<unsigned> ids;
+	for (unsigned k = 0; k < groupMat.rows(); k++)
+	{
+		if (groupMat.col(group)[k] == 1)
+			ids.push_back(k);
+	}
+	return ids;
+}
+
