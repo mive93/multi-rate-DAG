@@ -82,7 +82,7 @@ scheduling::createScheduleInfo(const DAG &dag, unsigned &lastUniqueId, bool verb
 
     for (size_t i = 0; i < nodes.size(); i++)
     {
-        if (nodes[i]->groupId != 0 && nodes[i]->groupId != 667 && nodes[i]->groupId != 666)
+        if (nodes[i]->groupId != 668 && nodes[i]->groupId != 667 && nodes[i]->groupId != 666)
         {
             std::shared_ptr<ScheduleInfo> si = std::make_shared<ScheduleInfo>();
             si->n = nodes[i];

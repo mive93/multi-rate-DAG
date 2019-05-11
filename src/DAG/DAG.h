@@ -14,8 +14,8 @@
 #include <string>
 #include <fstream>
 
-#include "Edge.h"
-#include "Node.h"
+#include "DAG/Edge.h"
+#include "DAG/Node.h"
 
 struct MultiEdge;
 class MultiRateTaskset;
@@ -146,8 +146,8 @@ public:
 	LatencyInfo
 	getLatencyInfo(const std::vector<unsigned>& dataChain) const;
 
-	LatencyInfo 
-	getLatencyInfoIterative(const std::vector<unsigned>& dataChain) const;
+	LatencyInfo
+	getMinLatency(const std::vector<unsigned>& dataChain, LatencyInfo& latency) const;
 
 	MultiRateTaskset*
 	getOriginatingTaskset() const
@@ -162,11 +162,22 @@ public:
 	}
 
 	const DAGMatrixFloat&
+	getPartiallySerializedReact() const
+	{
+		return partiallySerializedReact_;
+	}
+
+	const DAGMatrixFloat&
 	getPartiallySerialized() const
 	{
 		return partiallySerialized_;
 	}
 
+	const DAGMatrixFloat&
+	getPartiallySerializedReactBInit() const
+	{
+		return partiallySerializedReactBInit_;
+	}
 private:
 
 	void
@@ -178,11 +189,16 @@ private:
 	void
 	convertToBooleanVec(Eigen::VectorXi& vec) const;
 
+	std::vector<unsigned>
+	getIdsFromGroup(const DAGMatrix& groupMat, unsigned group) const;
+
 	DAGMatrix dagMatrix_;
 	DAGMatrix ancestors_;
 	DAGMatrix definitelySerialized_;
 
 	DAGMatrixFloat partiallySerialized_;
+	DAGMatrixFloat partiallySerializedReact_;
+	DAGMatrixFloat partiallySerializedReactBInit_;
 
 	std::vector<std::shared_ptr<Node>> nodes_;
 	std::vector<Edge> edges_;
