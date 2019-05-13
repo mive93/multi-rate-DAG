@@ -22,6 +22,9 @@ struct DummyNodes
 	bool
 	brokenDummyChain(const DAG& dag);
 
+	std::vector<float>
+	getSyncTimes() const;
+
 	std::vector<std::shared_ptr<Node>> dummyTasks;
 	std::vector<std::shared_ptr<Node>> syncNodes;
 	std::vector<Edge> dummyChain;

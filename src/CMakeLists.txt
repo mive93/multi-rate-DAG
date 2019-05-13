@@ -20,21 +20,32 @@ set(MULTIRATE_SRCS	MultiRate/MultiNode.cpp
 set(DAG_SRCS	DAG/DAG.cpp
 				DAG/Edge.cpp
 				DAG/MaxProduct.cpp
+				DAG/PlainDAG.cpp
 				)
 					
 set(EVAL_SRCS	Evaluation/Evaluation.cpp
 				Evaluation/Scheduling.cpp
 				)
-
-add_executable(main main.cpp
-					${VARIABLE_SRCS}
+					
+set(SIM_SRCS	Simulation/TaskSet.cpp
+				Simulation/DAGScheduler.cpp
+				)
+				
+				
+add_library(dag 	${VARIABLE_SRCS}
 					${MULTIRATE_SRCS}
 					${DAG_SRCS}
 					${EVAL_SRCS}
 					)
-					
-					
-					
-add_executable(sim Simulation/Simulate.cpp)
 
-target_link_libraries(sim uavap_core boost_system)
+add_executable(main main.cpp
+					)
+
+target_link_libraries(main uavap_core dag)
+					
+					
+					
+add_executable(sim 	Simulation/Simulate.cpp
+					${SIM_SRCS})
+
+target_link_libraries(sim uavap_core boost_system dag)

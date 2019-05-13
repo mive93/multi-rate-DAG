@@ -100,6 +100,7 @@ MultiRateTaskset::createBaselineDAG()
 	}
 
 	dummyNodes_->addToDAG(baselineDAG_, hyperPeriod_);
+	baselineDAG_.setDummyNodes(dummyNodes_);
 
 	std::cout << "Baseline DAG created" << std::endl;
 	std::cout << "Number of Nodes: " << baselineDAG_.getNumNodes() << std::endl;

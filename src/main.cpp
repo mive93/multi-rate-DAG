@@ -6,6 +6,7 @@
  */
 
 #include <DAG/MaxProduct.h>
+#include <DAG/PlainDAG.h>
 #include <Evaluation/Evaluation.h>
 #include <VariableTaskSet/VariableTaskSet.h>
 #include <eigen3/Eigen/Core>
@@ -18,6 +19,9 @@
 
 #include "Evaluation/Scheduling.h"
 #include <algorithm>
+
+#include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
+
 void
 taskset1()
 {
@@ -136,11 +140,11 @@ multiTaskset()
 	tstart = time(0);
 	VariableTaskSet taskSet;
 
-	auto task1 = taskSet.addTask(5, 2.5, "imu");
+	auto task1 = taskSet.addTask(5, 4, "imu");
 	auto task2 = taskSet.addTask(20, 5.2, "gps");
 	auto task3 = taskSet.addTask(10, 4.8, "planner");
-	auto task4 = taskSet.addTask(10, 8, "controller");
-	auto task5 = taskSet.addTask(20, 9, "act");
+	auto task4 = taskSet.addTask(10, 7, "controller");
+	auto task5 = taskSet.addTask(20, 8, "act");
 	auto task6 = taskSet.addTask(40, 13, "train");
 
 	task6->bcet = 10;
@@ -165,8 +169,8 @@ multiTaskset()
 	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
 	Evaluation eval;
-	eval.addLatency({task1, task1,task3, task4, task5}, LatencyCost(1,15), LatencyConstraint(200,200));
-	eval.addLatency({task2, task2, task3, task4, task5}, LatencyCost(1,3), LatencyConstraint(70,70));
+	eval.addLatency({task1,task3, task4, task5}, LatencyCost(1,15), LatencyConstraint(200,200));
+	eval.addLatency({task2, task3, task4, task5}, LatencyCost(1,3), LatencyConstraint(70,70));
 //	eval.addLatency({task1, task3}, LatencyCost(1,1), LatencyConstraint(25,25));
 	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(4));
 
@@ -177,6 +181,12 @@ multiTaskset()
 	std::cout << bestDAG.getNodeInfo()<< std::endl;
 	bestDAG.getLatencyInfo({1,1,2,3,4});
 //	scheduling::scheduleDAG(bestDAG, 4, "schedule_test.tex");
+
+
+	PlainDAG plain(bestDAG, 6);
+
+	std::ofstream file("dag");
+	dp::serialize(plain, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -206,12 +216,17 @@ multiTaskset2()
 	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
 	Evaluation eval;
-	eval.addLatency({task2, task1, task1}, LatencyCost(-1,-1), LatencyConstraint(60, 60));
+	eval.addLatency({task2, task1, task1}, LatencyCost(1,1), LatencyConstraint(60, 60));
 
 	const auto& bestDAG = eval.evaluate(allDags);
 
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
+
+	PlainDAG plain(bestDAG, 2);
+
+	std::ofstream file("dag");
+	dp::serialize(plain, file);
 
 	std::cout << bestDAG.getNodeInfo()<< std::endl;
 

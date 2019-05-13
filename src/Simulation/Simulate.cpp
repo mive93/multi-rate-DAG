@@ -5,28 +5,32 @@
  *      Author: mirco
  */
 
+#include <DAG/PlainDAG.h>
+#include <Simulation/DAGScheduler.h>
+#include <Simulation/TaskSet.h>
+#include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
 #include <uavAP/Core/Scheduler/MicroSimulator.h>
 
-int cool = 0;
-
-void
-test(MicroSimulator* sim)
-{
-	cool++;
-	sim->schedule(std::bind(test, sim), Milliseconds(300), Milliseconds(150));
-}
 
 int
 main()
 {
 
+	std::ifstream file("dag");
+	PlainDAG dag = dp::deserialize<PlainDAG>(file);
+
+	std::cout << dag.dagMatrix << std::endl;
+	std::cout << dag.nodeInfo << std::endl;
+
+	DAGScheduler dagSched(dag, TaskSet());
+
+	dagSched.taskFinished(0);
+	dagSched.reset();
+
 	MicroSimulator sim;
 
-	sim.schedule(std::bind(test, &sim), Milliseconds(50), Milliseconds(100));
+	sim.simulate(Seconds(1));
 
-	sim.simulate(Seconds(5));
-
-	std::cout << cool << std::endl;
 
 
 }

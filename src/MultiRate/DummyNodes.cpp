@@ -83,7 +83,6 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 	dummyChain.push_back(Edge(dummy, dag.getEnd()));
 
 
-
 	dag.addNodes(syncNodes);
 	dag.addNodes(dummyTasks);
 	dag.addEdges(dummyChain);
@@ -105,3 +104,13 @@ DummyNodes::brokenDummyChain(const DAG& dag)
 	return false;
 }
 
+std::vector<float>
+DummyNodes::getSyncTimes() const
+{
+	std::vector<float> syncTimes(syncNodes.size(), 0);
+	for (unsigned k = 0; k < syncNodes.size(); k++)
+	{
+		syncTimes[k] = syncNodes[k]->offset;
+	}
+	return syncTimes;
+}

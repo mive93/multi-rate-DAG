@@ -313,8 +313,8 @@ DAG::DAG(const DAG& other) :
 				other.getPartiallySerialized()), partiallySerializedReact_(
 				other.getPartiallySerializedReact()), partiallySerializedReactBInit_(
 				other.getPartiallySerializedReactBInit()), nodes_(other.getNodes()), edges_(
-				other.getEdges()), nodeInfo_(other.nodeInfo_), start_(other.getStart()), end_(
-				other.getEnd()), period_(other.period_), originatingTaskset_(
+				other.getEdges()), nodeInfo_(other.nodeInfo_), dummyNodes_(other.getDummyNodes()), start_(
+				other.getStart()), end_(other.getEnd()), period_(other.period_), originatingTaskset_(
 				other.getOriginatingTaskset())
 {
 }
@@ -708,7 +708,6 @@ DAG::getLatencyInfo(const std::vector<unsigned>& dataChain) const
 	return info;
 }
 
-
 LatencyInfo
 DAG::getMinLatency(const std::vector<unsigned>& dataChain, LatencyInfo& latency) const
 {
@@ -733,7 +732,6 @@ DAG::getMinLatency(const std::vector<unsigned>& dataChain, LatencyInfo& latency)
 		prop.startInterval = std::make_pair(nodeInfo_.eft[starter], nodeInfo_.lft[starter]);
 		prop.interval = prop.startInterval;
 
-
 		prop.shiftWriteRead(info.bc[starter], info.lst[starter]);
 		unsigned currentReadNode = starter;
 
@@ -750,7 +748,6 @@ DAG::getMinLatency(const std::vector<unsigned>& dataChain, LatencyInfo& latency)
 					continue;
 				if (!prop.canReact(info.eft[node], info.lft[node]))
 					continue;
-
 
 				prop.react(info.eft[node], info.lft[node]);
 				prop.shiftWriteRead(info.bc[node], info.lst[node]);
@@ -775,7 +772,6 @@ DAG::getMinLatency(const std::vector<unsigned>& dataChain, LatencyInfo& latency)
 			}
 
 		}
-
 
 		float diff = prop.startInterval.second - prop.interval.second;
 		if (diff < latency.minLatency)
@@ -802,3 +798,8 @@ DAG::getIdsFromGroup(const DAGMatrix& groupMat, unsigned group) const
 	return ids;
 }
 
+std::vector<float>
+DAG::getSyncTimes() const
+{
+	return dummyNodes_->getSyncTimes();
+}

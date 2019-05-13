@@ -18,6 +18,7 @@
 #include "DAG/Node.h"
 
 struct MultiEdge;
+struct DummyNodes;
 class MultiRateTaskset;
 
 class DAG
@@ -178,6 +179,21 @@ public:
 	{
 		return partiallySerializedReactBInit_;
 	}
+
+	const std::shared_ptr<DummyNodes>&
+	getDummyNodes() const
+	{
+		return dummyNodes_;
+	}
+
+	void
+	setDummyNodes(const std::shared_ptr<DummyNodes>& dummyNodes)
+	{
+		dummyNodes_ = dummyNodes;
+	}
+
+	std::vector<float>
+	getSyncTimes() const;
 private:
 
 	void
@@ -204,6 +220,8 @@ private:
 	std::vector<Edge> edges_;
 	NodeInfo nodeInfo_;
 
+	std::shared_ptr<DummyNodes> dummyNodes_;
+
 	std::shared_ptr<Node> start_;
 	std::shared_ptr<Node> end_;
 
@@ -212,5 +230,9 @@ private:
 	MultiRateTaskset* originatingTaskset_;
 
 };
+
+namespace dp
+{
+}
 
 #endif /* DAG_H_ */
