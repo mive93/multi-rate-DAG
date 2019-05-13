@@ -9,16 +9,21 @@
 #define SIMULATION_DAGSCHEDULER_H_
 #include <DAG/PlainDAG.h>
 #include <Simulation/TaskSet.h>
+#include <uavAP/Core/Object/IAggregatableObject.h>
+#include <uavAP/Core/Object/ObjectHandle.h>
+#include <uavAP/Core/Runner/IRunnableObject.h>
 
+class IScheduler;
 
-
-class DAGScheduler
+class DAGScheduler: public IAggregatableObject, public IRunnableObject
 {
 public:
 
-	DAGScheduler(const PlainDAG& dag, const TaskSet& taskset);
+	using BoolMatrix = PlainDAG::BoolMatrix;
 
-	TaskSet::Task
+	DAGScheduler(const PlainDAG& dag);
+
+	int
 	nextTask();
 
 	void
@@ -27,15 +32,31 @@ public:
 	void
 	reset();
 
+	void
+	notifyAggregationOnUpdate(const Aggregator& agg) override;
+
+	bool
+	run(RunStage stage) override;
+
 private:
 
+	void
+	queueReady();
+
+	void
+	scheduleSync();
+
+	void
+	syncReady(unsigned syncId);
+
 	PlainDAG dag_;
-	TaskSet taskSet_;
+	BoolMatrix depMatrix_;
 
-	Eigen::Matrix<bool, -1, -1> depMatrix_;
+	std::map<float, int> ready_;
+	unsigned numNodes_;
 
+	ObjectHandle<IScheduler> scheduler_;
 
 };
-
 
 #endif /* SIMULATION_DAGSCHEDULER_H_ */

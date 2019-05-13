@@ -15,18 +15,22 @@
 
 struct PlainDAG
 {
+	using BoolMatrix = Eigen::Matrix<bool, -1, -1>;
+
 	PlainDAG() = default;
 
 	PlainDAG(const DAG& dag, unsigned N);
 
-	Eigen::Matrix<bool, -1, -1> dagMatrix;
-	Eigen::Matrix<bool, -1, -1> groupMatrix;
-	Eigen::Matrix<bool, -1, -1> syncMatrixOffset;
-	Eigen::Matrix<bool, -1, -1> syncMatrixDeadline;
+	BoolMatrix dagMatrix;
+	BoolMatrix groupMatrix;
+	BoolMatrix syncMatrixOffset;
+	BoolMatrix syncMatrixDeadline;
 
 	std::vector<float> syncTimes;
 
 	DAG::NodeInfo nodeInfo;
+
+	unsigned period = 0;
 
 };
 
@@ -34,13 +38,14 @@ namespace dp
 {
 
 template<typename T>
-struct
-is_eigen_matrix : public std::false_type{};
+struct is_eigen_matrix: public std::false_type
+{
+};
 
 template<typename T, int n, int m>
-struct
-is_eigen_matrix<Eigen::Matrix<T, n, m>> : public std::true_type{};
-
+struct is_eigen_matrix<Eigen::Matrix<T, n, m>> : public std::true_type
+{
+};
 
 template<class Archive, typename Type>
 inline void
@@ -50,8 +55,8 @@ load(Archive& ar, typename std::enable_if<is_eigen_matrix<Type>::value, Type>::t
 	ar & rows;
 	ar & cols;
 
-	val.resize(rows,cols);
-	load(ar, reinterpret_cast<char*>(val.data()), val.size()*sizeof(typename Type::value_type));
+	val.resize(rows, cols);
+	load(ar, reinterpret_cast<char*>(val.data()), val.size() * sizeof(typename Type::value_type));
 
 }
 
@@ -62,7 +67,7 @@ store(Archive& ar, typename std::enable_if<is_eigen_matrix<Type>::value, Type>::
 	ar & val.rows();
 	ar & val.cols();
 
-	store(ar, reinterpret_cast<char*>(val.data()), val.size()*sizeof(typename Type::value_type));
+	store(ar, reinterpret_cast<char*>(val.data()), val.size() * sizeof(typename Type::value_type));
 
 }
 
@@ -72,7 +77,6 @@ serialize(Archive& ar, typename std::enable_if<is_eigen_matrix<Type>::value, Typ
 {
 	split(ar, val);
 }
-
 
 template<class Archive, typename Type>
 inline void
@@ -86,8 +90,7 @@ serialize(Archive& ar, DAG::NodeInfo& info)
 	ar & info.lft;
 }
 
-
-template <class Archive, typename Type>
+template<class Archive, typename Type>
 inline void
 serialize(Archive& ar, PlainDAG& dag)
 {
@@ -97,9 +100,8 @@ serialize(Archive& ar, PlainDAG& dag)
 	ar & dag.syncMatrixDeadline;
 	ar & dag.syncTimes;
 	ar & dag.nodeInfo;
+	ar & dag.period;
 }
 }
-
-
 
 #endif /* DAG_PLAINDAG_H_ */

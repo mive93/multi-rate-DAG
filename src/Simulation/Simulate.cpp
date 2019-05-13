@@ -9,28 +9,45 @@
 #include <Simulation/DAGScheduler.h>
 #include <Simulation/TaskSet.h>
 #include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
+#include <uavAP/Core/Object/Aggregator.h>
 #include <uavAP/Core/Scheduler/MicroSimulator.h>
-
+#include <uavAP/Core/Runner/SimpleRunner.h>
 
 int
 main()
 {
-
 	std::ifstream file("dag");
 	PlainDAG dag = dp::deserialize<PlainDAG>(file);
 
 	std::cout << dag.dagMatrix << std::endl;
 	std::cout << dag.nodeInfo << std::endl;
 
-	DAGScheduler dagSched(dag, TaskSet());
+	APLogger::instance()->setLogLevel(LogLevel::DEBUG);
+	auto sim = std::make_shared<MicroSimulator>();
+	auto dagSched = std::make_shared<DAGScheduler>(dag);
 
-	dagSched.taskFinished(0);
-	dagSched.reset();
+	auto agg = Aggregator::aggregate({sim, dagSched});
 
-	MicroSimulator sim;
+	SimpleRunner runner(agg);
 
-	sim.simulate(Seconds(1));
+	if (runner.runAllStages())
+	{
+		APLOG_ERROR << "Something went wrong";
+		return 1;
+	}
 
+	unsigned totalMillis = 1000;
+	unsigned increment = 10;
+	unsigned time = 0;
+	float realTime = 10;
 
+	while (time < totalMillis)
+	{
+		APLOG_TRACE << sim->now().time_of_day();
+		sim->simulate(Milliseconds(increment));
+		time += increment;
+		std::this_thread::sleep_for(
+				std::chrono::microseconds(static_cast<int>(realTime * increment * 1000)));
+	}
 
 }
