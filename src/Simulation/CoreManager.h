@@ -12,10 +12,13 @@
 #include <uavAP/Core/Runner/IRunnableObject.h>
 
 class DAGScheduler;
+class IScheduler;
 
 class CoreManager : public IAggregatableObject, public IRunnableObject
 {
 public:
+
+	CoreManager();
 
 	void
 	setNumCores(unsigned numCores);
@@ -26,12 +29,25 @@ public:
 	bool
 	run(RunStage stage) override;
 
+	void
+	syncReady();
+
+	void
+	taskReady();
+
 private:
+
+	void
+	getTask();
+
+	void
+	taskFinished(unsigned taskId);
 
 	unsigned totalCores_;
 	unsigned availableCores_;
 
 	ObjectHandle<DAGScheduler> dagScheduler_;
+	ObjectHandle<IScheduler> scheduler_;
 
 
 };

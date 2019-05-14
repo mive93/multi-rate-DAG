@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.8)
 project (dags)
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -std=c++14 -fPIC -Wall -Wno-int-in-bool-context")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -std=c++17 -fPIC -Wall -Wno-int-in-bool-context")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall")
 
 include_directories(${CMAKE_SOURCE_DIR})
@@ -29,6 +29,7 @@ set(EVAL_SRCS	Evaluation/Evaluation.cpp
 					
 set(SIM_SRCS	Simulation/TaskSet.cpp
 				Simulation/DAGScheduler.cpp
+				Simulation/CoreManager.cpp
 				)
 				
 				

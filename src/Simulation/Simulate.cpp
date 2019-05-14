@@ -6,6 +6,7 @@
  */
 
 #include <DAG/PlainDAG.h>
+#include <Simulation/CoreManager.h>
 #include <Simulation/DAGScheduler.h>
 #include <Simulation/TaskSet.h>
 #include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
@@ -25,8 +26,11 @@ main()
 	APLogger::instance()->setLogLevel(LogLevel::DEBUG);
 	auto sim = std::make_shared<MicroSimulator>();
 	auto dagSched = std::make_shared<DAGScheduler>(dag);
+	auto coreMan = std::make_shared<CoreManager>();
 
-	auto agg = Aggregator::aggregate({sim, dagSched});
+	coreMan->setNumCores(5);
+
+	auto agg = Aggregator::aggregate({sim, dagSched, coreMan});
 
 	SimpleRunner runner(agg);
 
@@ -37,9 +41,9 @@ main()
 	}
 
 	unsigned totalMillis = 1000;
-	unsigned increment = 10;
+	unsigned increment = 2;
 	unsigned time = 0;
-	float realTime = 10;
+	float realTime = 20;
 
 	while (time < totalMillis)
 	{

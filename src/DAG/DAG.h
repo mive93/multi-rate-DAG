@@ -231,8 +231,4 @@ private:
 
 };
 
-namespace dp
-{
-}
-
 #endif /* DAG_H_ */

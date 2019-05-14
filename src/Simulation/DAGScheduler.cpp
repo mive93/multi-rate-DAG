@@ -4,6 +4,7 @@
  *  Created on: May 13, 2019
  *      Author: mirco
  */
+#include <Simulation/CoreManager.h>
 #include <Simulation/DAGScheduler.h>
 #include <uavAP/Core/Logging/APLogger.h>
 #include <uavAP/Core/Scheduler/IScheduler.h>
@@ -31,6 +32,8 @@ DAGScheduler::nextTask()
 void
 DAGScheduler::taskFinished(unsigned taskId)
 {
+	APLOG_DEBUG << "Task " << taskId << " finished";
+
 	depMatrix_.col(taskId).setZero();
 	depMatrix_.coeffRef(taskId, depMatrix_.cols() - 1) = 1;
 	queueReady();
@@ -40,11 +43,19 @@ void
 DAGScheduler::reset()
 {
 	APLOG_DEBUG << "DAGScheduler reset";
+
+	if (!depMatrix_.col(depMatrix_.cols() - 1).isOnes())
+	{
+		APLOG_ERROR << "DEADLINE MISSED!!!!!!     " << depMatrix_.col(depMatrix_.cols() - 1).transpose();
+	}
 	depMatrix_ << dag_.dagMatrix, dag_.syncMatrixOffset, BoolMatrix::Zero(depMatrix_.rows(), 2);
 
 	ready_.clear();
 	queueReady();
 	scheduleSync();
+
+	auto coreMan = coreManager_.get();
+	coreMan->syncReady();
 }
 
 void
@@ -110,10 +121,19 @@ DAGScheduler::syncReady(unsigned syncId)
 	APLOG_DEBUG << "Sync ready: " << syncId;
 	depMatrix_.col(numNodes_ + syncId).setZero();
 	queueReady();
+	auto coreMan = coreManager_.get();
+	coreMan->syncReady();
 }
 
 void
 DAGScheduler::notifyAggregationOnUpdate(const Aggregator& agg)
 {
 	scheduler_.setFromAggregationIfNotSet(agg);
+	coreManager_.setFromAggregationIfNotSet(agg);
+}
+
+const DAG::NodeInfo&
+DAGScheduler::getNodeInfo() const
+{
+	return dag_.nodeInfo;
 }

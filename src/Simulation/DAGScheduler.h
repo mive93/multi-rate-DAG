@@ -14,6 +14,7 @@
 #include <uavAP/Core/Runner/IRunnableObject.h>
 
 class IScheduler;
+class CoreManager;
 
 class DAGScheduler: public IAggregatableObject, public IRunnableObject
 {
@@ -38,6 +39,9 @@ public:
 	bool
 	run(RunStage stage) override;
 
+	const DAG::NodeInfo&
+	getNodeInfo() const;
+
 private:
 
 	void
@@ -52,10 +56,11 @@ private:
 	PlainDAG dag_;
 	BoolMatrix depMatrix_;
 
-	std::map<float, int> ready_;
+	std::multimap<float, int> ready_;
 	unsigned numNodes_;
 
 	ObjectHandle<IScheduler> scheduler_;
+	ObjectHandle<CoreManager> coreManager_;
 
 };
 
