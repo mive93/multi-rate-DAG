@@ -188,6 +188,9 @@ multiTaskset()
 	std::ofstream file("dag");
 	dp::serialize(plain, file);
 
+	std::ofstream fileTasks("tasks");
+	dp::serialize(taskSet.getPlainTaskSet(), fileTasks);
+
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
 
@@ -202,12 +205,12 @@ multiTaskset2()
 	tstart = time(0);
 	VariableTaskSet taskSet;
 
-	auto task1 = taskSet.addTask(5, 3, "imu");
-	auto task2 = taskSet.addTask(20, 4, "planner");
+	auto task1 = taskSet.addTask(5, 1, "imu");
+	auto task2 = taskSet.addTask(20, 1, "planner");
 
-	task2->bcet = 3;
+//	task2->bcet = 3;
 
-	taskSet.addDataEdge(task1, task2, { 0, 1, 2,3,4 });
+	taskSet.addDataEdge(task1, task2, { 2});
 
 	taskSet.createBaselineTaskset();
 
@@ -216,7 +219,7 @@ multiTaskset2()
 	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
 	Evaluation eval;
-	eval.addLatency({task2, task1, task1}, LatencyCost(1,1), LatencyConstraint(60, 60));
+	eval.addLatency({task1, task2}, LatencyCost(1,1), LatencyConstraint(60, 60));
 
 	const auto& bestDAG = eval.evaluate(allDags);
 

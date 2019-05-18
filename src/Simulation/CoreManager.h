@@ -13,12 +13,14 @@
 
 class DAGScheduler;
 class IScheduler;
+class TaskSet;
+
 
 class CoreManager : public IAggregatableObject, public IRunnableObject
 {
 public:
 
-	CoreManager();
+	CoreManager(unsigned cores);
 
 	void
 	setNumCores(unsigned numCores);
@@ -33,21 +35,19 @@ public:
 	syncReady();
 
 	void
-	taskReady();
+	taskFinished();
 
 private:
 
 	void
 	getTask();
 
-	void
-	taskFinished(unsigned taskId);
-
 	unsigned totalCores_;
 	unsigned availableCores_;
 
 	ObjectHandle<DAGScheduler> dagScheduler_;
 	ObjectHandle<IScheduler> scheduler_;
+	ObjectHandle<TaskSet> taskSet_;
 
 
 };

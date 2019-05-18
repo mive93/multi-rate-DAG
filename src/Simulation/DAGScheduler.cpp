@@ -15,7 +15,7 @@ DAGScheduler::DAGScheduler(const PlainDAG& dag) :
 		dag_(dag)
 {
 	numNodes_ = dag_.dagMatrix.rows();
-	depMatrix_.resize(numNodes_, numNodes_ + dag_.syncMatrixOffset.cols() + 2);
+	depMatrix_.resize(numNodes_, numNodes_ + dag_.syncMatrixOffset.cols() + 3);
 }
 
 int
@@ -26,16 +26,24 @@ DAGScheduler::nextTask()
 
 	int ready = ready_.begin()->second;
 	ready_.erase(ready_.begin());
-	return ready;
+
+	depMatrix_.coeffRef(ready, depMatrix_.cols() - 2) = 1; //Set job as started
+
+	return taskFromJob(ready);
 }
 
 void
 DAGScheduler::taskFinished(unsigned taskId)
 {
-	APLOG_DEBUG << "Task " << taskId << " finished";
+	auto jobs = jobsFromTask(taskId);
 
-	depMatrix_.col(taskId).setZero();
-	depMatrix_.coeffRef(taskId, depMatrix_.cols() - 1) = 1;
+	for (auto job : jobs)
+		if (depMatrix_.coeff(job, depMatrix_.cols() - 2) && !depMatrix_.coeff(job, depMatrix_.cols() - 1))
+		{
+			depMatrix_.col(job).setZero();
+			depMatrix_.coeffRef(job, depMatrix_.cols() - 1) = 1;
+			break;
+		}
 	queueReady();
 }
 
@@ -46,13 +54,11 @@ DAGScheduler::reset()
 
 	if (!depMatrix_.col(depMatrix_.cols() - 1).isOnes())
 	{
-		APLOG_ERROR << "DEADLINE MISSED!!!!!!     " << depMatrix_.col(depMatrix_.cols() - 1).transpose();
+		APLOG_ERROR << "DEADLINE MISSED!!!!!!     "
+				<< depMatrix_.col(depMatrix_.cols() - 1).transpose();
 	}
-	depMatrix_ << dag_.dagMatrix, dag_.syncMatrixOffset, BoolMatrix::Zero(depMatrix_.rows(), 2);
 
-	ready_.clear();
-	queueReady();
-	scheduleSync();
+	initDepMatrix();
 
 	auto coreMan = coreManager_.get();
 	coreMan->syncReady();
@@ -66,7 +72,7 @@ DAGScheduler::queueReady()
 		if (depMatrix_.row(k).isZero())
 		{
 			ready_.insert(std::make_pair(dag_.nodeInfo.lft[k], k));
-			depMatrix_.coeffRef(k, depMatrix_.cols() - 2) = 1;
+			depMatrix_.coeffRef(k, depMatrix_.cols() - 3) = 1;
 		}
 	}
 
@@ -84,7 +90,8 @@ DAGScheduler::scheduleSync()
 
 	for (unsigned k = 0; k < dag_.syncTimes.size(); k++)
 	{
-		scheduler->schedule(std::bind(&DAGScheduler::syncReady, this, k), Microseconds(dag_.syncTimes[k] * 1000));
+		scheduler->schedule(std::bind(&DAGScheduler::syncReady, this, k),
+				Microseconds(dag_.syncTimes[k] * 1000));
 	}
 
 	scheduler->schedule(std::bind(&DAGScheduler::reset, this), Microseconds(dag_.period * 1000));
@@ -106,7 +113,7 @@ DAGScheduler::run(RunStage stage)
 	}
 	case RunStage::NORMAL:
 	{
-		reset();
+		initDepMatrix();
 		break;
 	}
 	default:
@@ -118,7 +125,7 @@ DAGScheduler::run(RunStage stage)
 void
 DAGScheduler::syncReady(unsigned syncId)
 {
-	APLOG_DEBUG << "Sync ready: " << syncId;
+	APLOG_TRACE << "Sync ready: " << syncId;
 	depMatrix_.col(numNodes_ + syncId).setZero();
 	queueReady();
 	auto coreMan = coreManager_.get();
@@ -136,4 +143,34 @@ const DAG::NodeInfo&
 DAGScheduler::getNodeInfo() const
 {
 	return dag_.nodeInfo;
+}
+
+void
+DAGScheduler::initDepMatrix()
+{
+	depMatrix_ << dag_.dagMatrix, dag_.syncMatrixOffset, BoolMatrix::Zero(depMatrix_.rows(), 3);
+
+	ready_.clear();
+	queueReady();
+	scheduleSync();
+}
+
+int
+DAGScheduler::taskFromJob(int job)
+{
+	for (int k = 0; k < dag_.groupMatrix.cols(); k++)
+		if (dag_.groupMatrix.coeff(job, k))
+			return k;
+
+	return -1;
+}
+
+std::vector<int>
+DAGScheduler::jobsFromTask(int task)
+{
+	std::vector<int> jobs;
+	for (int k = 0; k < dag_.groupMatrix.rows(); k++)
+		if (dag_.groupMatrix.coeff(k, task))
+			jobs.push_back(k);
+	return jobs;
 }

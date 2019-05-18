@@ -141,8 +141,10 @@ MultiRateTaskset::createDAGs()
 			if (edge.from->getUtilization() + edge.to->getUtilization() > 1.0)
 			{
 				std::cout << "Utilization overusage" << std::endl;
-				std::cout << "Edge from " << edge.from->name << " to " << edge.to->name << ":" << std::endl;
-				std::cout << "Jitter is 0 but total utilization is " << edge.from->getUtilization() + edge.to->getUtilization() << std::endl;
+				std::cout << "Edge from " << edge.from->name << " to " << edge.to->name << ":"
+						<< std::endl;
+				std::cout << "Jitter is 0 but total utilization is "
+						<< edge.from->getUtilization() + edge.to->getUtilization() << std::endl;
 				std::cout << "Taskset not schedulable." << std::endl;
 				std::cout << dags_.size() << " valid DAGs were created" << std::endl;
 
@@ -192,12 +194,12 @@ MultiRateTaskset::createDAGs()
 			continue;
 		}
 
-		if (!checkJitter(dag))
-		{
-//			std::cout << " excluded because jitter incorrect" << std::endl;
-			jitterFailure++;
-			continue;
-		}
+//		if (!checkJitter(dag))
+//		{
+////			std::cout << " excluded because jitter incorrect" << std::endl;
+//			jitterFailure++;
+//			continue;
+//		}
 
 		dag.createNodeInfo();
 //		std::cout << " is fine" << std::endl;
@@ -313,4 +315,22 @@ MultiRateTaskset::getUtilization() const
 	for (const auto& node : nodes_)
 		u += node->getUtilization();
 	return u;
+}
+
+PlainTaskSet
+MultiRateTaskset::getPlainTaskSet() const
+{
+	PlainTaskSet set;
+	set.bcet.resize(nodes_.size());
+	set.wcet.resize(nodes_.size());
+	set.name.resize(nodes_.size());
+
+	for (unsigned k = 0; k < nodes_.size(); k++)
+	{
+		set.bcet[k] = nodes_[k]->bcet;
+		set.wcet[k] = nodes_[k]->wcet;
+		set.name[k] = nodes_[k]->name;
+	}
+
+	return set;
 }

@@ -118,8 +118,11 @@ VariableTaskSet::createDAGs()
 float
 VariableTaskSet::getUtilization() const
 {
-	float u = 0;
-	for (const auto& node : nodes_)
-		u += node->getUtilization();
-	return u;
+	return baselineTaskset_.getUtilization();
+}
+
+PlainTaskSet
+VariableTaskSet::getPlainTaskSet() const
+{
+	return baselineTaskset_.getPlainTaskSet();
 }

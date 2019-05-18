@@ -34,6 +34,9 @@ public:
 	reset();
 
 	void
+	initDepMatrix();
+
+	void
 	notifyAggregationOnUpdate(const Aggregator& agg) override;
 
 	bool
@@ -52,6 +55,12 @@ private:
 
 	void
 	syncReady(unsigned syncId);
+
+	int
+	taskFromJob(int job);
+
+	std::vector<int>
+	jobsFromTask(int task);
 
 	PlainDAG dag_;
 	BoolMatrix depMatrix_;

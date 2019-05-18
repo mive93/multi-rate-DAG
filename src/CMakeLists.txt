@@ -28,6 +28,7 @@ set(EVAL_SRCS	Evaluation/Evaluation.cpp
 				)
 					
 set(SIM_SRCS	Simulation/TaskSet.cpp
+				Simulation/Task.cpp
 				Simulation/DAGScheduler.cpp
 				Simulation/CoreManager.cpp
 				)

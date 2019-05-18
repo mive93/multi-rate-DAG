@@ -8,6 +8,7 @@
 #ifndef VARIABLETASKSET_VARIABLETASKSET_H_
 #define VARIABLETASKSET_VARIABLETASKSET_H_
 #include <MultiRate/MultiRateTaskset.h>
+#include <VariableTaskSet/PlainTaskSet.h>
 #include <VariableTaskSet/VariableMultiEdge.h>
 #include <vector>
 
@@ -43,10 +44,12 @@ public:
 	float
 	getUtilization() const;
 
+	PlainTaskSet
+	getPlainTaskSet() const;
+
 
 private:
 
-	std::vector<std::shared_ptr<MultiNode>> nodes_;
 	std::vector<VariableMultiEdge> edges_;
 
 	std::vector<MultiRateTaskset> tasksets_;

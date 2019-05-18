@@ -8,7 +8,7 @@
 #include <iostream>
 
 PlainDAG::PlainDAG(const DAG& dag, unsigned N) :
-		groupMatrix(dag.getGroupMatrix(N).cast<bool>()), syncTimes(dag.getSyncTimes()), period(dag.getPeriod())
+		syncTimes(dag.getSyncTimes()), period(dag.getPeriod())
 {
 	const auto& dagMatFull = dag.getDAGMatrix();
 	unsigned n = dagMatFull.rows();
@@ -19,6 +19,8 @@ PlainDAG::PlainDAG(const DAG& dag, unsigned N) :
 	syncMatrixOffset = dagMatFull.block(2, 2 + nNew, nNew, syncTimes.size()).cast<bool>();
 
 	syncMatrixDeadline = dagMatFull.block(2 + nNew, 2, syncTimes.size(), nNew).cast<bool>();
+
+	groupMatrix = dag.getGroupMatrix(N).cast<bool>().block(2, 0, nNew, N);
 
 	const auto& info = dag.getNodeInfo();
 	nodeInfo.bc = info.bc.bottomRows(n-2).topRows(nNew);

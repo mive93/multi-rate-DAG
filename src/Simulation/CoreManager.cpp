@@ -10,11 +10,6 @@
 #include <uavAP/Core/Scheduler/IScheduler.h>
 #include <uavAP/Core/Time.h>
 
-CoreManager::CoreManager() :
-		totalCores_(0), availableCores_(0)
-{
-}
-
 void
 CoreManager::setNumCores(unsigned numCores)
 {
@@ -26,6 +21,7 @@ CoreManager::notifyAggregationOnUpdate(const Aggregator& agg)
 {
 	dagScheduler_.setFromAggregationIfNotSet(agg);
 	scheduler_.setFromAggregationIfNotSet(agg);
+	taskSet_.setFromAggregationIfNotSet(agg);
 }
 
 bool
@@ -44,6 +40,8 @@ CoreManager::run(RunStage stage)
 	}
 	case RunStage::NORMAL:
 	{
+		auto sched = scheduler_.get();
+		sched->schedule(std::bind(&CoreManager::getTask, this), Microseconds(0));
 		availableCores_ = totalCores_;
 		break;
 	}
@@ -60,7 +58,7 @@ CoreManager::syncReady()
 }
 
 void
-CoreManager::taskReady()
+CoreManager::taskFinished()
 {
 	availableCores_++;
 	if (availableCores_ > totalCores_)
@@ -72,26 +70,30 @@ CoreManager::taskReady()
 void
 CoreManager::getTask()
 {
+
+	if (availableCores_ <= 0)
+	{
+		return;
+	}
+
 	auto dagSched = dagScheduler_.get();
 
 	int next = dagSched->nextTask();
 	if (next == -1)
 		return;
 
-	if (availableCores_ <= 0)
-	{
-		return;
-	}
-	const auto& info = dagSched->getNodeInfo();
+	auto taskSet = taskSet_.get();
+
+	auto task = taskSet->getTask(next);
+
 	auto sched = scheduler_.get();
-	sched->schedule(std::bind(&CoreManager::taskFinished, this, static_cast<unsigned>(next)), Microseconds(1000 * info.wc[next]));
+	sched->schedule(task, Microseconds(0));
 	availableCores_--;
+	if (availableCores_ > 0)
+		getTask();
 }
 
-void
-CoreManager::taskFinished(unsigned taskId)
+CoreManager::CoreManager(unsigned cores) :
+		totalCores_(cores), availableCores_(cores)
 {
-	auto dagSched = dagScheduler_.get();
-	dagSched->taskFinished(taskId);
-	taskReady();
 }

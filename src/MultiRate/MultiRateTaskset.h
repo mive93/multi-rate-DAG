@@ -8,6 +8,7 @@
 #ifndef MULTIRATE_H_
 #define MULTIRATE_H_
 
+#include <VariableTaskSet/PlainTaskSet.h>
 #include <memory>
 
 #include "DAG/DAG.h"
@@ -84,6 +85,9 @@ public:
 
 	float
 	getUtilization() const;
+
+	PlainTaskSet
+	getPlainTaskSet() const;
 
 private:
 
