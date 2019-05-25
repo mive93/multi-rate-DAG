@@ -32,6 +32,12 @@ public:
 	const VariableMultiEdge&
 	addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to, std::vector<unsigned> jitters);
 
+	const VariableMultiEdge&
+	addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to, unsigned maxJitter);
+
+	const VariableMultiEdge&
+	addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to);
+
 	MultiRateTaskset&
 	createBaselineTaskset();
 

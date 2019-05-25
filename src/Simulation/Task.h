@@ -9,6 +9,7 @@
 #define SIMULATION_TASK_H_
 
 #include <functional>
+#include <vector>
 
 struct Task
 {
@@ -24,7 +25,7 @@ struct Task
 
 	std::string name;
 
-	void emptyFunc(){}
+	void emptyFcn(){}
 
 };
 

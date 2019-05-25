@@ -6,6 +6,7 @@
  */
 
 #include <DAG/PlainDAG.h>
+#include <Evaluation/Evaluation.h>
 #include <Simulation/CoreManager.h>
 #include <Simulation/DAGScheduler.h>
 #include <Simulation/TaskSet.h>
@@ -16,31 +17,35 @@
 #include <uavAP/Core/Runner/SimpleRunner.h>
 
 int
-main()
+main(int argc, char** argv)
 {
-	std::ifstream file("dag");
-	PlainDAG dag = dp::deserialize<PlainDAG>(file);
 
-	std::ifstream fileTasks("tasks");
-	auto set = dp::deserialize<PlainTaskSet>(fileTasks);
+	unsigned seed = 0;
+	if (argc == 2)
+	{
+		seed = atoi(argv[1]);
+	}
 
-	std::cout << set << std::endl;
+	std::ifstream file("data");
+	auto dag = dp::deserialize<PlainDAG>(file);
+	auto set = dp::deserialize<PlainTaskSet>(file);
+	auto evalRead = dp::deserialize<Evaluation>(file);
 
-	std::cout << dag.dagMatrix << std::endl;
-	std::cout << dag.nodeInfo << std::endl;
+	dag.getLatencyInfo({0});
 
 	APLogger::instance()->setLogLevel(LogLevel::WARN);
 	auto sim = std::make_shared<MicroSimulator>();
 	auto dagSched = std::make_shared<DAGScheduler>(dag);
 	auto coreMan = std::make_shared<CoreManager>(4);
 	auto taskSet = std::make_shared<TaskSet>(set);
+	auto eval = std::make_shared<Evaluation>(evalRead);
 
-	auto agg = Aggregator::aggregate( { sim, dagSched, coreMan, taskSet });
+	eval->addChain({1,0,0,2,3,4});
 
-	unsigned imuCount = 0;
-	unsigned* imuCounter = &imuCount;
-	taskSet->setReadFunction(0, [imuCounter](){(*imuCounter)++; std::cout << *imuCounter << std::endl;});
-	taskSet->setWriteFunction(0, [imuCounter](){std::cout << *imuCounter << " done" << std::endl;});
+	eval->printInfo();
+	taskSet->setSeed(seed);
+
+	auto agg = Aggregator::aggregate( { sim, dagSched, coreMan, taskSet, eval });
 
 	SimpleRunner runner(agg);
 
@@ -50,7 +55,7 @@ main()
 		return 1;
 	}
 
-	unsigned totalMillis = 40;
+	unsigned totalMillis = 1e5;
 	unsigned increment = 2;
 	unsigned time = 0;
 	float realTime = 0;
@@ -66,5 +71,8 @@ main()
 		}
 	else
 		sim->simulate(Milliseconds(totalMillis));
+
+	eval->exportLatency("test1");
+
 
 }

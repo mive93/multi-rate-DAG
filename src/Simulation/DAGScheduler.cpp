@@ -12,7 +12,7 @@
 #include <set>
 
 DAGScheduler::DAGScheduler(const PlainDAG& dag) :
-		dag_(dag)
+		dag_(dag), deadlineMatrix_(dag.syncMatrixDeadline)
 {
 	numNodes_ = dag_.dagMatrix.rows();
 	depMatrix_.resize(numNodes_, numNodes_ + dag_.syncMatrixOffset.cols() + 3);
@@ -42,6 +42,7 @@ DAGScheduler::taskFinished(unsigned taskId)
 		{
 			depMatrix_.col(job).setZero();
 			depMatrix_.coeffRef(job, depMatrix_.cols() - 1) = 1;
+			deadlineMatrix_.col(job).setZero();
 			break;
 		}
 	queueReady();
@@ -127,6 +128,10 @@ DAGScheduler::syncReady(unsigned syncId)
 {
 	APLOG_TRACE << "Sync ready: " << syncId;
 	depMatrix_.col(numNodes_ + syncId).setZero();
+
+	if (!deadlineMatrix_.row(syncId).isZero())
+		APLOG_ERROR << "Internal Deadline miss!!!";
+
 	queueReady();
 	auto coreMan = coreManager_.get();
 	coreMan->syncReady();
@@ -149,6 +154,7 @@ void
 DAGScheduler::initDepMatrix()
 {
 	depMatrix_ << dag_.dagMatrix, dag_.syncMatrixOffset, BoolMatrix::Zero(depMatrix_.rows(), 3);
+	deadlineMatrix_ << dag_.syncMatrixDeadline;
 
 	ready_.clear();
 	queueReady();

@@ -21,6 +21,9 @@ struct PlainDAG
 
 	PlainDAG(const DAG& dag, unsigned N);
 
+	LatencyInfo
+	getLatencyInfo(const std::vector<unsigned>& chain);
+
 	BoolMatrix dagMatrix;
 	BoolMatrix groupMatrix;
 	BoolMatrix syncMatrixOffset;

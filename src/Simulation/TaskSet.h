@@ -24,7 +24,7 @@ class TaskSet : public IAggregatableObject, public IRunnableObject
 
 public:
 
-	TaskSet() = default;
+	TaskSet();
 
 	TaskSet(const PlainTaskSet& plain);
 
@@ -45,6 +45,11 @@ public:
 	const Function&
 	getTask(unsigned taskId);
 
+	unsigned
+	getNumTasks() const;
+
+	void
+	setSeed(unsigned seed);
 
 private:
 
@@ -59,6 +64,8 @@ private:
 
 	float
 	getExectutionTime(unsigned taskId);
+
+	unsigned seed_;
 
 	std::vector<Task> tasks_;
 

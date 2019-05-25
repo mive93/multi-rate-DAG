@@ -11,7 +11,13 @@
 #include <uavAP/Core/Scheduler/IScheduler.h>
 #include <uavAP/Core/Time.h>
 
-TaskSet::TaskSet(const PlainTaskSet& plain)
+TaskSet::TaskSet() :
+		seed_(0)
+{
+}
+
+TaskSet::TaskSet(const PlainTaskSet& plain) :
+		seed_(0)
 {
 	for (unsigned k = 0; k < plain.bcet.size(); k++)
 	{
@@ -51,6 +57,7 @@ TaskSet::run(RunStage stage)
 	case RunStage::NORMAL:
 	{
 		createFakeTasks();
+		srand(seed_);
 		break;
 	}
 	default:
@@ -64,7 +71,7 @@ TaskSet::createFakeTasks()
 {
 	for (unsigned k = 0; k < tasks_.size(); k++)
 	{
-		fakeTasks_.push_back(std::bind(&TaskSet::fakeTask, this, tasks_[k], k));
+		fakeTasks_.push_back(std::bind(&TaskSet::fakeTask, this, std::cref(tasks_[k]), k));
 	}
 }
 
@@ -98,7 +105,10 @@ float
 TaskSet::getExectutionTime(unsigned taskId)
 {
 	APLOG_TRACE << "Get exec time:" << tasks_[taskId].wcet;
-	return tasks_[taskId].wcet;
+
+	int val = rand();
+	float c = (float)val/RAND_MAX * (tasks_[taskId].wcet - tasks_[taskId].bcet - 0.001) + tasks_[taskId].bcet; //actual wcet can lead to sched problems
+	return c;
 }
 
 void
@@ -111,4 +121,16 @@ void
 TaskSet::setWriteFunction(unsigned taskId, const Function& writeFcn)
 {
 	tasks_[taskId].writeFunction = writeFcn;
+}
+
+unsigned
+TaskSet::getNumTasks() const
+{
+	return tasks_.size();
+}
+
+void
+TaskSet::setSeed(unsigned seed)
+{
+	seed_ = seed;
 }

@@ -64,6 +64,7 @@ private:
 
 	PlainDAG dag_;
 	BoolMatrix depMatrix_;
+	BoolMatrix deadlineMatrix_;
 
 	std::multimap<float, int> ready_;
 	unsigned numNodes_;

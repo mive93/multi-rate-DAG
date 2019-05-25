@@ -126,3 +126,22 @@ VariableTaskSet::getPlainTaskSet() const
 {
 	return baselineTaskset_.getPlainTaskSet();
 }
+
+const VariableMultiEdge&
+VariableTaskSet::addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to)
+{
+	std::vector<unsigned> jitters;
+	for (unsigned k = 0; k <= std::max(from->period, to->period)/std::min(from->period, to->period); k++)
+		jitters.push_back(k);
+	return addDataEdge(from, to, jitters);
+}
+
+const VariableMultiEdge&
+VariableTaskSet::addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to,
+		unsigned maxJitter)
+{
+	std::vector<unsigned> jitters;
+	for (unsigned k = 0; k <= std::min(std::max(from->period, to->period)/std::min(from->period, to->period), maxJitter); k++)
+		jitters.push_back(k);
+	return addDataEdge(from, to, jitters);
+}

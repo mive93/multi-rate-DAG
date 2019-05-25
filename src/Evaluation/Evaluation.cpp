@@ -8,12 +8,20 @@
 #include <Evaluation/LatencyInfo.h>
 #include <Evaluation/Scheduling.h>
 #include <MultiRate/MultiRateTaskset.h>
+#include <uavAP/Core/Logging/APLogger.h>
+#include <Simulation/TaskSet.h>
 #include <cmath>
 #include <iostream>
 
+void
+Evaluation::addLatency(const std::vector<std::shared_ptr<MultiNode>>& chain,
+		const LatencyCost& cost, const LatencyConstraint& constraint)
+{
+	latencyEval_.push_back(std::make_pair(taskChainToNum(chain), std::make_pair(cost, constraint)));
+}
 
 void
-Evaluation::addLatency(const Chain& chain, const LatencyCost& cost,
+Evaluation::addChain(const std::vector<unsigned>& chain, const LatencyCost& cost,
 		const LatencyConstraint& constraint)
 {
 	latencyEval_.push_back(std::make_pair(chain, std::make_pair(cost, constraint)));
@@ -25,46 +33,14 @@ Evaluation::evaluate(const std::vector<DAG>& dags)
 	std::vector<float> cost(dags.size(), 0.0);
 
 	unsigned invalidDags = 0;
-	for (const auto& eval : latencyEval_)
+	int k = 0;
+	for (const auto& dag : dags)
 	{
-		std::vector<unsigned> chain = taskChainToNum(eval.first);
-
-		for (unsigned k = 0; k < dags.size(); k++)
-		{
-			if (std::isnan(cost[k]))
-				continue;
-
-			auto info = dags[k].getLatencyInfo(chain);
-
-			if (!eval.second.second.isValid(info))
-			{
-				cost[k] = NAN;
-				invalidDags++;
-				continue;
-			}
-
-			cost[k] += eval.second.first.getCost(info);
-
-		}
-	}
-
-	for (unsigned k = 0; k < dags.size(); k++)
-	{
-		if (std::isnan(cost[k]))
-			continue;
-
-		SchedulingInfo info = getSchedulingInfo(dags[k], schedulingEval_.second);
-
-		if (!schedulingEval_.second.isValid(info))
-		{
-			cost[k] = NAN;
+		cost[k] = evaluate(dag);
+		if (std::isnan(cost[k++]))
 			invalidDags++;
-			continue;
-		}
-
-		cost[k] += schedulingEval_.first.getCost(info);
-
 	}
+
 	std::cout << "Num invalid dags: " << invalidDags << std::endl;
 
 	if (invalidDags == dags.size())
@@ -84,15 +60,50 @@ Evaluation::evaluate(const std::vector<DAG>& dags)
 		}
 	}
 
-	std::cout << "Best DAG: " << bestDAG << ", with total cost: " << minCost << std::endl << std::endl;
+	std::cout << "Best DAG: " << bestDAG << ", with total cost: " << minCost << std::endl
+			<< std::endl;
 	for (const auto& eval : latencyEval_)
 	{
 		printChain(eval.first);
-		std::cout << dags[bestDAG].getLatencyInfo(taskChainToNum(eval.first)) << std::endl;
+		std::cout << dags[bestDAG].getLatencyInfo(eval.first) << std::endl;
 	}
 
+	std::cout << "Cores needed: "
+			<< getSchedulingInfo(dags[bestDAG], schedulingEval_.second).numCoresNeeded << std::endl;
 
 	return dags[bestDAG];
+}
+
+float
+Evaluation::evaluate(const DAG& dag)
+{
+	float cost = 0;
+	std::vector<LatencyInfo> latencies;
+	for (const auto& eval : latencyEval_)
+	{
+		auto info = dag.getLatencyInfo(eval.first);
+
+		latencies.push_back(info);
+
+		if (!eval.second.second.isValid(info))
+		{
+			return NAN;
+		}
+
+		cost += eval.second.first.getCost(info);
+
+	}
+
+	SchedulingInfo info = getSchedulingInfo(dag, schedulingEval_.second);
+
+	if (!schedulingEval_.second.isValid(info))
+	{
+		return NAN;
+	}
+
+	latencies_.push_back(latencies);
+	cost += schedulingEval_.first.getCost(info);
+	return cost;
 }
 
 void
@@ -102,7 +113,7 @@ Evaluation::addScheduling(const SchedulingCost& cost, const SchedulingConstraint
 }
 
 std::vector<unsigned>
-Evaluation::taskChainToNum(const Chain& chain)
+Evaluation::taskChainToNum(const std::vector<std::shared_ptr<MultiNode>>& chain)
 {
 	std::vector<unsigned> c;
 	for (const auto& node : chain)
@@ -113,13 +124,13 @@ Evaluation::taskChainToNum(const Chain& chain)
 }
 
 void
-Evaluation::printChain(const Chain& chain)
+Evaluation::printChain(const std::vector<unsigned>& chain) const
 {
 	std::cout << "Chain: ";
 
 	for (const auto& n : chain)
 	{
-		std::cout <<"->" << n->name;
+		std::cout << "->" << n;
 	}
 	std::cout << std::endl;
 }
@@ -138,38 +149,141 @@ Evaluation::getSchedulingInfo(const DAG& dag, const SchedulingConstraint& constr
 	return SchedulingInfo(constraint.maxCores + 1);
 }
 
+void
+Evaluation::printInfo() const
+{
+	for (const auto& eval : latencyEval_)
+	{
+		printChain(eval.first);
+		std::cout << eval.second.first << std::endl;
+		std::cout << eval.second.second << std::endl;
+	}
 
+	for (const auto& chain : chainSims_)
+	{
+		std::cout << "Data Ages" << std::endl;
+		for (const auto& age : chain.ages)
+			std::cout << age.total_microseconds() << std::endl;
+		std::cout << "Reaction time" << std::endl;
+		for (const auto& react : chain.reactions)
+			std::cout << react.total_microseconds() << std::endl;
+	}
+}
 
+void
+Evaluation::notifyAggregationOnUpdate(const Aggregator& agg)
+{
+	taskSet_.setFromAggregationIfNotSet(agg);
+	timeProvider_.setFromAggregationIfNotSet(agg);
+}
 
+bool
+Evaluation::run(RunStage stage)
+{
+	switch (stage)
+	{
+	case RunStage::INIT:
+	{
+		if (!taskSet_.isSet())
+		{
+			APLOG_ERROR << "Taskset missing.";
+			return true;
+		}
+		if (!timeProvider_.isSet())
+		{
+			APLOG_ERROR << "Time Provider missing.";
+			return true;
+		}
+		break;
+	}
+	case RunStage::NORMAL:
+	{
+		initChainSims();
+		auto set = taskSet_.get();
+		for (unsigned k = 0; k < set->getNumTasks(); k++)
+		{
+			set->setReadFunction(k, std::bind(&Evaluation::readTask, this, k));
+			set->setWriteFunction(k, std::bind(&Evaluation::writeTask, this, k));
+		}
+		std::cout << "Chain sim num: " << chainSims_.size() << std::endl;
+		break;
+	}
+	default:
+		break;
+	}
+	return false;
+}
 
+void
+Evaluation::initChainSims()
+{
+	for (const auto& lat : latencyEval_)
+	{
+		ChainSim sim;
+		sim.chain = lat.first;
+		chainSims_.push_back(sim);
+	}
+}
 
+void
+Evaluation::readTask(unsigned task)
+{
+	auto tp = timeProvider_.get();
+	auto time = tp->now();
+	for (auto& sim : chainSims_)
+		sim.read(task, time);
+}
 
+void
+Evaluation::exportReactionTimes(const std::string& filename)
+{
+	std::ofstream file(filename);
+	for (const auto& reacts : latencies_)
+	{
+		for (const auto& time : reacts)
+		{
+			file << time.reactionTime << " ";
+		}
+		file << std::endl;
+	}
+}
 
+void
+Evaluation::exportDataAges(const std::string& filename)
+{
+	std::ofstream file(filename);
+	for (const auto& ages : latencies_)
+	{
+		for (const auto& time : ages)
+		{
+			file << time.maxLatency << " ";
+		}
+		file << std::endl;
+	}
+}
 
+void
+Evaluation::writeTask(unsigned task)
+{
+	auto tp = timeProvider_.get();
+	auto time = tp->now();
+	for (auto& sim : chainSims_)
+		sim.write(task, time);
+}
 
+void
+Evaluation::exportLatency(const std::string& fileOffset)
+{
+	unsigned k = 0;
+	for (const auto& chain : chainSims_)
+	{
+		std::ofstream ageFile(fileOffset + "_chain" + std::to_string(k) + "_age");
+		for (const auto& age : chain.ages)
+			ageFile << age.total_microseconds() << std::endl;
+		std::ofstream reactFile(fileOffset + "_chain" + std::to_string(k) + "_react");
+		for (const auto& react : chain.reactions)
+			reactFile << react.total_microseconds() << std::endl;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		k++;
+	}
+}

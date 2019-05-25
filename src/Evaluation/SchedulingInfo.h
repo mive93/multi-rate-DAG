@@ -57,4 +57,28 @@ struct SchedulingConstraint
 	}
 };
 
+namespace dp
+{
+template<class Archive, typename>
+inline void
+serialize(Archive& ar, SchedulingInfo& info)
+{
+	ar & info.numCoresNeeded;
+}
+
+template<class Archive, typename>
+inline void
+serialize(Archive& ar, SchedulingCost& info)
+{
+	ar & info.coreCost;
+}
+
+template<class Archive, typename>
+inline void
+serialize(Archive& ar, SchedulingConstraint& info)
+{
+	ar & info.maxCores;
+}
+}
+
 #endif /* EVALUATION_SCHEDULINGINFO_H_ */

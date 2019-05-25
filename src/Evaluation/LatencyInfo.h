@@ -67,6 +67,37 @@ struct LatencyConstraint
 	}
 };
 
+namespace dp
+{
+template<class Archive, typename>
+inline void
+serialize(Archive& ar, LatencyInfo& info)
+{
+	ar & info.maxLatency;
+	ar & info.maxLatencyPair;
+	ar & info.minLatency;
+	ar & info.minLatencyPair;
+	ar & info.reactionTime;
+	ar & info.reactionTimePair;
+}
+
+template<class Archive, typename>
+inline void
+serialize(Archive& ar, LatencyCost& info)
+{
+	ar & info.maxLatency;
+	ar & info.reactionTime;
+}
+
+template<class Archive, typename>
+inline void
+serialize(Archive& ar, LatencyConstraint& info)
+{
+	ar & info.maxDataAge;
+	ar & info.maxReactionTime;
+}
+}
+
 inline std::ostream&
 operator <<(std::ostream& o, const LatencyInfo& info)
 {
@@ -76,6 +107,22 @@ operator <<(std::ostream& o, const LatencyInfo& info)
 			<< info.maxLatencyPair.second << "]" << std::endl;
 	o << "ReactionTime: " << info.reactionTime << " [" << info.reactionTimePair.first << "-"
 			<< info.reactionTimePair.second << "]" << std::endl;
+	return o;
+}
+
+inline std::ostream&
+operator <<(std::ostream& o, const LatencyCost& cost)
+{
+	o << "Cost max Latency: " << cost.maxLatency << std::endl;
+	o << "Cost ReactionTime: " << cost.reactionTime << std::endl;
+	return o;
+}
+
+inline std::ostream&
+operator <<(std::ostream& o, const LatencyConstraint& constr)
+{
+	o << "Max Data Age: " << constr.maxDataAge << std::endl;
+	o << "Max React Time: " << constr.maxReactionTime << std::endl;
 	return o;
 }
 

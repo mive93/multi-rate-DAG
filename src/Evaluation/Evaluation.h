@@ -11,15 +11,33 @@
 #include <Evaluation/LatencyInfo.h>
 #include <Evaluation/SchedulingInfo.h>
 #include <MultiRate/MultiNode.h>
+#include <Simulation/ChainSim.h>
+#include <uavAP/Core/Object/IAggregatableObject.h>
+#include <uavAP/Core/Object/ObjectHandle.h>
+#include <uavAP/Core/Runner/IRunnableObject.h>
+#include <uavAP/Core/TimeProvider/ITimeProvider.h>
 
-class Evaluation
+class Evaluation;
+namespace dp
+{
+template<class Archive, typename >
+void
+serialize(Archive& ar, Evaluation& eval);
+}
+
+class TaskSet;
+class ITimeProvider;
+
+class Evaluation : public IAggregatableObject, public IRunnableObject
 {
 public:
 
-	using Chain = std::vector<std::shared_ptr<MultiNode>>;
 
 	void
-	addLatency(const Chain& chain, const LatencyCost& cost, const LatencyConstraint& constraint);
+	addLatency(const std::vector<std::shared_ptr<MultiNode>>& chain, const LatencyCost& cost, const LatencyConstraint& constraint);
+
+	void
+	addChain(const std::vector<unsigned>& chain, const LatencyCost& cost = LatencyCost(), const LatencyConstraint& constraint = LatencyConstraint());
 
 	void
 	addScheduling(const SchedulingCost& cost, const SchedulingConstraint& constraint);
@@ -27,22 +45,65 @@ public:
 	const DAG&
 	evaluate(const std::vector<DAG>& dags);
 
+	float
+	evaluate(const DAG& dag);
+
 	std::vector<unsigned>
-	taskChainToNum(const Chain& chain);
+	taskChainToNum(const std::vector<std::shared_ptr<MultiNode>>& chain);
+
+	void
+	printInfo() const;
+
+	void
+	notifyAggregationOnUpdate(const Aggregator& agg) override;
+
+	bool
+	run(RunStage stage) override;
+
+	void
+	exportLatency(const std::string& fileOffset);
+
+	void
+	exportReactionTimes(const std::string& filename);
+
+	void
+	exportDataAges(const std::string& filename);
 
 private:
 
 	void
-	printChain(const Chain& chain);
+	printChain(const std::vector<unsigned>& chain) const;
 
 	SchedulingInfo
 	getSchedulingInfo(const DAG& dag, const SchedulingConstraint& constraint);
 
+	void
+	initChainSims();
 
+	void
+	readTask(unsigned task);
 
-	std::vector<std::pair<Chain, std::pair<LatencyCost, LatencyConstraint>>> latencyEval_;
+	void
+	writeTask(unsigned task);
+
+	std::vector<std::pair<std::vector<unsigned>, std::pair<LatencyCost, LatencyConstraint>>> latencyEval_;
 
 	std::pair<SchedulingCost, SchedulingConstraint> schedulingEval_;
+
+	std::vector<ChainSim> chainSims_;
+
+	std::vector<std::vector<LatencyInfo>> latencies_;
+
+	ObjectHandle<TaskSet> taskSet_;
+	ObjectHandle<ITimeProvider> timeProvider_;
+
+	template<class Archive, typename >
+	inline friend void
+	dp::serialize(Archive& ar, Evaluation& eval)
+	{
+		ar & eval.latencyEval_;
+		ar & eval.schedulingEval_;
+	}
 
 };
 
