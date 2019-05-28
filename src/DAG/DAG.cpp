@@ -324,10 +324,8 @@ DAG::checkLongestChain() const
 {
 	unsigned n = nodes_.size();
 
-	Eigen::VectorXi v = Eigen::VectorXi::Zero(n);
 	Eigen::VectorXf val = Eigen::VectorXf::Zero(n);
 	Eigen::VectorXf wc = Eigen::VectorXf::Zero(n);
-	v[0] = 1;
 
 	for (unsigned k = 0; k < n; ++k)
 		wc[k] = nodes_[k]->wcet;
@@ -336,16 +334,13 @@ DAG::checkLongestChain() const
 
 	for (unsigned k = 0; k < n; ++k)
 	{
-		v = dagMatrix_ * v;
-		convertToBooleanVec(v);
-
-		Eigen::VectorXf temp = wc.array() * v.cast<float>().array();
-		val = maxProduct(dagMatrix_, val) + temp;
+		auto vPre = val;
+		val = maxProduct(dagMatrix_, val + wc);
 
 		if (val[endIdx] > static_cast<int>(period_))
 			return false;
 
-		if (v.isZero())
+		if (vPre == val)
 			break;
 	}
 	return true;
@@ -397,14 +392,10 @@ DAG::createNodeInfo()
 {
 	unsigned n = nodes_.size();
 
-	Eigen::VectorXi v = Eigen::VectorXi::Zero(n);
 	Eigen::VectorXf val = Eigen::VectorXf::Zero(n);
-	Eigen::VectorXi vBackwards = Eigen::VectorXi::Zero(n);
 	Eigen::VectorXf valBackwards = Eigen::VectorXf::Zero(n);
 	nodeInfo_.bc = Eigen::VectorXf::Zero(n);
 	nodeInfo_.wc = Eigen::VectorXf::Zero(n);
-	v[0] = 1;
-	vBackwards[1] = 1;
 
 	auto back = dagMatrix_.transpose();
 
@@ -416,28 +407,20 @@ DAG::createNodeInfo()
 
 	for (unsigned k = 0; k < n; ++k)
 	{
-		v = dagMatrix_ * v;
-		vBackwards = back * vBackwards;
-		convertToBooleanVec(v);
-		convertToBooleanVec(vBackwards);
+		auto valPre = val;
+		val = maxProduct(dagMatrix_, val + nodeInfo_.bc);
 
-		Eigen::VectorXf temp = nodeInfo_.bc.array() * v.cast<float>().array();
-		// val = max_cellwise(val, val_after_step)
-		val = (maxProduct(dagMatrix_, val) + temp).array().max(val.array()).matrix();
-
-		Eigen::VectorXf tempBack = nodeInfo_.wc.array() * vBackwards.cast<float>().array();
-		// val = max_cellwise(val, val_after_step)
 		valBackwards =
-				(maxProduct(back, valBackwards) + tempBack).array().max(valBackwards.array()).matrix();
+				maxProduct(back, valBackwards + nodeInfo_.wc);
 
-		if (v.isZero())
+		if (valPre == val)
 			break;
 	}
 
-	nodeInfo_.est = val - nodeInfo_.bc;
-	nodeInfo_.lst = (period_ - valBackwards.array()).matrix();
+	nodeInfo_.est = val;
+	nodeInfo_.lft = (period_ - valBackwards.array()).matrix();
 	nodeInfo_.eft = nodeInfo_.est + nodeInfo_.bc;
-	nodeInfo_.lft = nodeInfo_.lst + nodeInfo_.wc;
+	nodeInfo_.lst = nodeInfo_.lft - nodeInfo_.wc;
 
 	definitelySerialized_ = ancestors_.transpose() - DAGMatrix::Identity(n, n);
 

@@ -317,7 +317,7 @@ int
 main()
 {
 
-	return samples::sharedInput();
+	return multiTaskset();
 
 }
 
