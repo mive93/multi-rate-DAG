@@ -130,10 +130,7 @@ VariableTaskSet::getPlainTaskSet() const
 const VariableMultiEdge&
 VariableTaskSet::addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to)
 {
-	std::vector<unsigned> jitters;
-	for (unsigned k = 0; k <= std::max(from->period, to->period)/std::min(from->period, to->period); k++)
-		jitters.push_back(k);
-	return addDataEdge(from, to, jitters);
+	return addDataEdge(from, to, std::max(from->period, to->period)/std::min(from->period, to->period));
 }
 
 const VariableMultiEdge&
@@ -141,7 +138,25 @@ VariableTaskSet::addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<Mu
 		unsigned maxJitter)
 {
 	std::vector<unsigned> jitters;
-	for (unsigned k = 0; k <= std::min(std::max(from->period, to->period)/std::min(from->period, to->period), maxJitter); k++)
+
+	std::shared_ptr<MultiNode> fast;
+	std::shared_ptr<MultiNode> slow;
+
+	if (from->period > to->period)
+	{
+		fast = to;
+		slow = from;
+	}
+	else
+	{
+		fast = from;
+		slow = to;
+	}
+	unsigned jitterMin = std::max(int(std::ceil((2*fast->wcet + slow->wcet)/ fast->period)-2),0);
+	std::cout << jitterMin << std::endl;
+
+
+	for (unsigned k = jitterMin; k <= std::min(std::max(from->period, to->period)/std::min(from->period, to->period), maxJitter); k++)
 		jitters.push_back(k);
 	return addDataEdge(from, to, jitters);
 }

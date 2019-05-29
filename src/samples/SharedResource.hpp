@@ -162,6 +162,73 @@ cycles()
 	return 0;
 }
 
+inline int
+hercules()
+{
+	time_t tstart, tend;
+	tstart = time(0);
+	VariableTaskSet taskSet;
+
+	auto gps = taskSet.addTask(50, 7, "gps");
+	auto lidar = taskSet.addTask(50, 12, "lidar");
+	auto localization = taskSet.addTask(50, 28, "localization");
+	auto ekf = taskSet.addTask(10, 7, "ekf");
+	auto planner = taskSet.addTask(10, 6, "planner");
+	auto control = taskSet.addTask(10, 5, "control");
+	auto camera = taskSet.addTask(25, 2.2, "camera");
+	auto detection = taskSet.addTask(50, 28, "detection");
+	auto fusion = taskSet.addTask(50, 25, "fusion");
+
+	gps->bcet = 5;
+	lidar->bcet = 10;
+	localization->bcet = 22;
+	ekf->bcet = 5;
+	planner->bcet = 4;
+	control->bcet = 3.5;
+	camera->bcet = 1.8;
+	detection->bcet = 25;
+	fusion->bcet = 18.9;
+
+	taskSet.createBaselineTaskset();
+
+	taskSet.addDataEdge(gps, localization);
+	taskSet.addDataEdge(lidar, localization);
+//	taskSet.addDataEdge(lidar, planner);
+	taskSet.addDataEdge(localization, ekf);
+	taskSet.addDataEdge(ekf, planner);
+	taskSet.addDataEdge(planner, control);
+	taskSet.addDataEdge(camera, detection, 0);
+	taskSet.addDataEdge(detection, fusion);
+//	taskSet.addDataEdge(lidar, fusion);
+	taskSet.addDataEdge(fusion, planner);
+
+	Evaluation eval;
+	eval.addLatency({gps, localization,ekf,planner,control}, LatencyCost(1,0), LatencyConstraint());
+	eval.addLatency({lidar, localization,ekf,planner,control}, LatencyCost(1,0), LatencyConstraint());
+	eval.addLatency({camera, detection, fusion, planner,control}, LatencyCost(1,0), LatencyConstraint());
+	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(10));
+
+	const auto& bestDAG = eval.evaluate(taskSet.createDAGs());
+
+	eval.exportReactionTimes("reactions");
+	eval.exportDataAges("ages");
+
+	bestDAG.toTikz("hercules_dag.tex");
+	bestDAG.getOriginatingTaskset()->toTikz("hercules_taskset.tex");
+
+	PlainDAG plain(bestDAG, taskSet.getPlainTaskSet().name.size());
+
+	std::ofstream file("data");
+	dp::serialize(plain, file);
+	dp::serialize(taskSet.getPlainTaskSet(), file);
+	dp::serialize(eval, file);
+
+	tend = time(0);
+	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
+
+	return 0;
+}
+
 }
 
 #endif /* SAMPLES_SHAREDRESOURCE_HPP_ */

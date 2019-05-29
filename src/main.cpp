@@ -317,7 +317,7 @@ int
 main()
 {
 
-	return multiTaskset();
+	return samples::hercules();
 
 }
 

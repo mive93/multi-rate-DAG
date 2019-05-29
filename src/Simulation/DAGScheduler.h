@@ -45,6 +45,12 @@ public:
 	const DAG::NodeInfo&
 	getNodeInfo() const;
 
+	const BoolMatrix&
+	getDepMatrix() const
+	{
+		return depMatrix_;
+	}
+
 private:
 
 	void

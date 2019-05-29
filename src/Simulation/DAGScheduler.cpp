@@ -130,7 +130,7 @@ DAGScheduler::syncReady(unsigned syncId)
 	depMatrix_.col(numNodes_ + syncId).setZero();
 
 	if (!deadlineMatrix_.row(syncId).isZero())
-		APLOG_ERROR << "Internal Deadline miss!!!";
+		APLOG_ERROR << "Internal Deadline at " << dag_.syncTimes[syncId] << ": " << deadlineMatrix_.row(syncId);
 
 	queueReady();
 	auto coreMan = coreManager_.get();
@@ -168,6 +168,7 @@ DAGScheduler::taskFromJob(int job)
 		if (dag_.groupMatrix.coeff(job, k))
 			return k;
 
+	APLOG_ERROR << "Group matrix does not have an entry for " << job;
 	return -1;
 }
 

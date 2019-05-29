@@ -36,9 +36,17 @@ Evaluation::evaluate(const std::vector<DAG>& dags)
 	int k = 0;
 	for (const auto& dag : dags)
 	{
+		std::cout << "Evaluating DAG " << k << "/" <<dags.size() << " ";
 		cost[k] = evaluate(dag);
 		if (std::isnan(cost[k++]))
+		{
 			invalidDags++;
+			std::cout << "invalid" << std::endl;
+		}
+		else
+			std::cout << "cost: " << cost[k-1] << std::endl;
+
+
 	}
 
 	std::cout << "Num invalid dags: " << invalidDags << std::endl;

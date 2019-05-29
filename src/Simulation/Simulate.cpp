@@ -31,16 +31,14 @@ main(int argc, char** argv)
 	auto set = dp::deserialize<PlainTaskSet>(file);
 	auto evalRead = dp::deserialize<Evaluation>(file);
 
-	dag.getLatencyInfo({0});
+	std::cout << dag.nodeInfo << std::endl;
 
 	APLogger::instance()->setLogLevel(LogLevel::WARN);
 	auto sim = std::make_shared<MicroSimulator>();
 	auto dagSched = std::make_shared<DAGScheduler>(dag);
-	auto coreMan = std::make_shared<CoreManager>(4);
+	auto coreMan = std::make_shared<CoreManager>(10);
 	auto taskSet = std::make_shared<TaskSet>(set);
 	auto eval = std::make_shared<Evaluation>(evalRead);
-
-	eval->addChain({1,0,0,2,3,4});
 
 	eval->printInfo();
 	taskSet->setSeed(seed);
@@ -63,7 +61,8 @@ main(int argc, char** argv)
 	if (realTime > 0)
 		while (time < totalMillis)
 		{
-			APLOG_TRACE << sim->now().time_of_day();
+			APLOG_TRACE << sim->now().time_of_day()<< std::endl;
+			std::cout << dagSched->getDepMatrix() << std::endl;
 			sim->simulate(Milliseconds(increment));
 			time += increment;
 			std::this_thread::sleep_for(

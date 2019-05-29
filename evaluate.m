@@ -15,6 +15,6 @@ react = react{:} / 1000.0;
 fid = fclose(fid);
 
 
-histogram(react, 'BinWidth', 0.2, 'FaceColor', 'blue')
-hold on
+% histogram(react, 'BinWidth', 0.2, 'FaceColor', 'blue')
+% hold on
 histogram(age, 'BinWidth', 0.2, 'FaceColor', 'red')
