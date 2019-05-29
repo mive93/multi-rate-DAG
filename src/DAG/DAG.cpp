@@ -410,8 +410,7 @@ DAG::createNodeInfo()
 		auto valPre = val;
 		val = maxProduct(dagMatrix_, val + nodeInfo_.bc);
 
-		valBackwards =
-				maxProduct(back, valBackwards + nodeInfo_.wc);
+		valBackwards = maxProduct(back, valBackwards + nodeInfo_.wc);
 
 		if (valPre == val)
 			break;
@@ -433,59 +432,59 @@ DAG::createNodeInfo()
 		}
 	}
 
-	partiallySerialized_ = definitelySerialized_.cast<float>();
-
-	const auto& nI = nodeInfo_;
-
-	for (unsigned from = 0; from < n; from++)
-	{
-		for (unsigned to = 0; to < n; to++)
-		{
-			if (definitelySerialized_.coeff(to, from) == 1)
-				continue;
-
-			if (nI.lft[from] > nI.est[to] && nI.lft[from] < nI.lst[to])
-			{
-				float aw = (nI.lst[to] - nI.lft[from]) / (nI.lft[to] - nI.eft[to]);
-				partiallySerialized_.coeffRef(to, from) = aw;
-			}
-		}
-	}
-
-	partiallySerializedReactBInit_ = DAGMatrixFloat::Zero(n, n);
-	partiallySerializedReact_ = definitelySerialized_.cast<float>();
-	for (unsigned from = 2; from < n; from++)
-	{
-		for (unsigned to = 2; to < n; to++)
-		{
-			if (nodes_.at(to)->groupId != nodes_.at(to - 1)->groupId)
-			{
-				if (nodes_.at(to - 1)->groupId >= 666)
-					continue;
-
-				if (dagMatrix_.coeff(to - 1, from) == 1)
-					continue;
-
-				float ar = (nI.lft[from] - nI.est[to - 1]);
-				if (nI.lst[from] - nI.est[from] != 0)
-					ar /= (nI.lst[from] - nI.est[from]);
-				unsigned firstInstance = originatingTaskset_->getNodes()[nodes_.at(to - 1)->groupId
-						- 1]->nodes.front()->uniqueId;
-				partiallySerializedReactBInit_.coeffRef(firstInstance, from) = std::max(
-						std::min(ar, 1.0f), 0.0f);
-				continue;
-			}
-
-			if (nI.eft[from] < nI.est[to])
-			{
-				float ar = (nI.lft[from] - nI.est[to - 1]);
-
-				if (nI.lst[from] - nI.est[from] > 0)
-					ar /= (nI.lst[from] - nI.est[from]);
-				partiallySerializedReact_.coeffRef(to, from) = std::max(std::min(ar, 1.0f), 0.0f);
-			}
-		}
-	}
+//	partiallySerialized_ = definitelySerialized_.cast<float>();
+//
+//	const auto& nI = nodeInfo_;
+//
+//	for (unsigned from = 0; from < n; from++)
+//	{
+//		for (unsigned to = 0; to < n; to++)
+//		{
+//			if (definitelySerialized_.coeff(to, from) == 1)
+//				continue;
+//
+//			if (nI.lft[from] > nI.est[to] && nI.lft[from] < nI.lst[to])
+//			{
+//				float aw = (nI.lst[to] - nI.lft[from]) / (nI.lft[to] - nI.eft[to]);
+//				partiallySerialized_.coeffRef(to, from) = aw;
+//			}
+//		}
+//	}
+//
+//	partiallySerializedReactBInit_ = DAGMatrixFloat::Zero(n, n);
+//	partiallySerializedReact_ = definitelySerialized_.cast<float>();
+//	for (unsigned from = 2; from < n; from++)
+//	{
+//		for (unsigned to = 2; to < n; to++)
+//		{
+//			if (nodes_.at(to)->groupId != nodes_.at(to - 1)->groupId)
+//			{
+//				if (nodes_.at(to - 1)->groupId >= 666)
+//					continue;
+//
+//				if (dagMatrix_.coeff(to - 1, from) == 1)
+//					continue;
+//
+//				float ar = (nI.lft[from] - nI.est[to - 1]);
+//				if (nI.lst[from] - nI.est[from] != 0)
+//					ar /= (nI.lst[from] - nI.est[from]);
+//				unsigned firstInstance = originatingTaskset_->getNodes()[nodes_.at(to - 1)->groupId
+//						- 1]->nodes.front()->uniqueId;
+//				partiallySerializedReactBInit_.coeffRef(firstInstance, from) = std::max(
+//						std::min(ar, 1.0f), 0.0f);
+//				continue;
+//			}
+//
+//			if (nI.eft[from] < nI.est[to])
+//			{
+//				float ar = (nI.lft[from] - nI.est[to - 1]);
+//
+//				if (nI.lst[from] - nI.est[from] > 0)
+//					ar /= (nI.lst[from] - nI.est[from]);
+//				partiallySerializedReact_.coeffRef(to, from) = std::max(std::min(ar, 1.0f), 0.0f);
+//			}
+//		}
+//	}
 
 }
 
@@ -679,6 +678,120 @@ DAG::getLatencyInfo(const std::vector<unsigned>& dataChain) const
 		float val = temp[last] * (nodeInfo_.lft[last % n] - nodeInfo_.eft[last % n]);
 
 		float diff = (hpCounter + (last / n)) * period_ + nodeInfo_.eft[last % n] + val
+				- nodeInfo_.est[*it];
+		if (diff > info.maxLatency)
+		{
+			info.maxLatency = diff;
+			info.maxLatencyPair = std::make_pair(*it, last % n);
+		}
+	}
+
+	getMinLatency(dataChain, info);
+	return info;
+}
+
+LatencyInfo
+DAG::getLatencyInfoNoCutoff(const std::vector<unsigned>& dataChain) const
+{
+	unsigned n = nodes_.size();
+
+	unsigned maxGroup = 0;
+	for (const auto& g : dataChain)
+		if (g > maxGroup)
+			maxGroup = g;
+
+	unsigned startGroup = dataChain.front();
+	unsigned endGroup = dataChain.back();
+
+	std::vector<unsigned> groupChain(std::next(dataChain.begin()), std::prev(dataChain.end()));
+
+	auto groupMat = getGroupMatrix(maxGroup + 1);
+
+	DAGMatrix A = definitelySerialized_;
+	DAGMatrix B = DAGMatrix::Ones(n, n);
+	DAGMatrix C = DAGMatrix::Ones(n, n);
+
+	unsigned hpCounter = 0;
+
+	for (auto g : groupChain)
+	{
+		auto diag = groupMat.col(g).asDiagonal();
+		DAGMatrix Anew = definitelySerialized_ * diag * A;
+		if (Anew.isZero())
+		{
+			A = B;
+			B = DAGMatrix::Ones(n, n);
+			Anew = definitelySerialized_ * diag * A;
+			hpCounter++;
+		}
+		B = DAGMatrix::Ones(n, n) * diag * A + definitelySerialized_ * diag * B;
+		A = Anew;
+		convertToBooleanMat(A);
+		convertToBooleanMat(B);
+	}
+
+	A = groupMat.col(endGroup).asDiagonal() * A;
+	B = groupMat.col(endGroup).asDiagonal() * B;
+	C = groupMat.col(endGroup).asDiagonal() * C;
+
+	std::vector<unsigned> starters;
+	for (unsigned k = 0; k < n; k++)
+		if (groupMat.col(startGroup)[k] == 1)
+			starters.push_back(k);
+
+	LatencyInfo info;
+	info.reactionTime = 0;
+	info.maxLatency = 0;
+	info.minLatency = 0; // Not implemented yet
+
+	for (auto it = starters.begin(); it != starters.end(); it++)
+	{
+		Eigen::VectorXi temp;
+		temp.resize(3 * n);
+		temp << A.col(*it), B.col(*it), C.col(*it);
+
+		Eigen::VectorXi tempNext;
+		tempNext.resize(3 * n);
+
+		auto next = std::next(it);
+		if (next == starters.end())
+		{
+			tempNext << Eigen::VectorXi::Zero(n, 1), A.col(starters.front()), B.col(
+					starters.front());
+		}
+		else
+		{
+			tempNext << A.col(*next), B.col(*next), C.col(*next);
+		}
+
+		//Reaction time
+		unsigned first = 0;
+		for (; first < 3 * n; first++)
+			if (temp[first] == 1)
+			{
+				float diff = (hpCounter + (first / n)) * period_ + nodeInfo_.lft[first % n]
+						- nodeInfo_.est[*it];
+				if (diff > info.reactionTime)
+				{
+					info.reactionTime = diff;
+					info.reactionTimePair = std::make_pair(*it, first % n);
+				}
+				info.reactionTimePair = std::make_pair(*it, first % n);
+				break;
+			}
+
+		//Data Age
+		temp -= tempNext;
+		convertToBooleanVec(temp);
+		if (temp.isZero())
+			continue;
+
+		unsigned last = 3 * n - 1;
+		for (; last >= 0; last--)
+			if (temp[last] == 1)
+				break;
+
+		float diff = (hpCounter + (last / n)) * period_ + nodeInfo_.lft[last % n]
 				- nodeInfo_.est[*it];
 		if (diff > info.maxLatency)
 		{

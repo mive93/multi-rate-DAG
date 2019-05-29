@@ -5,11 +5,11 @@
  *      Author: mirco
  */
 #include <Simulation/ChainSim.h>
+#include <Simulation/JitterCount.h>
 
 void
 ChainSim::read(unsigned task, const TimePoint& time)
 {
-	//TODO Works only for chains without duplicates (e.g. no filters)
 	for (unsigned id = 0; id < chain.size(); id++)
 	{
 		if (chain[id] == task)
@@ -40,7 +40,6 @@ ChainSim::read(unsigned task, const TimePoint& time)
 void
 ChainSim::write(unsigned task, const TimePoint& time)
 {
-	//TODO Works only for chains without duplicates (e.g. no filters)
 	for (unsigned id = 0; id < chain.size(); id++)
 	{
 		if (chain[id] == task)

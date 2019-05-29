@@ -73,7 +73,7 @@ Evaluation::evaluate(const std::vector<DAG>& dags)
 	for (const auto& eval : latencyEval_)
 	{
 		printChain(eval.first);
-		std::cout << dags[bestDAG].getLatencyInfo(eval.first) << std::endl;
+		std::cout << dags[bestDAG].getLatencyInfoNoCutoff(eval.first) << std::endl;
 	}
 
 	std::cout << "Cores needed: "
@@ -89,7 +89,7 @@ Evaluation::evaluate(const DAG& dag)
 	std::vector<LatencyInfo> latencies;
 	for (const auto& eval : latencyEval_)
 	{
-		auto info = dag.getLatencyInfo(eval.first);
+		auto info = dag.getLatencyInfoNoCutoff(eval.first);
 
 		latencies.push_back(info);
 
@@ -240,6 +240,7 @@ Evaluation::readTask(unsigned task)
 	auto time = tp->now();
 	for (auto& sim : chainSims_)
 		sim.read(task, time);
+	jitterCounter_.read(task);
 }
 
 void
@@ -271,12 +272,19 @@ Evaluation::exportDataAges(const std::string& filename)
 }
 
 void
+Evaluation::addJitterCount(unsigned from, unsigned to)
+{
+	jitterCounter_.addJitterCount(from, to);
+}
+
+void
 Evaluation::writeTask(unsigned task)
 {
 	auto tp = timeProvider_.get();
 	auto time = tp->now();
 	for (auto& sim : chainSims_)
 		sim.write(task, time);
+	jitterCounter_.write(task);
 }
 
 void
@@ -294,4 +302,10 @@ Evaluation::exportLatency(const std::string& fileOffset)
 
 		k++;
 	}
+}
+
+const std::vector<uint8_t>&
+Evaluation::getJitterCount(unsigned from, unsigned to) const
+{
+	return jitterCounter_.getJitterCount(from, to);
 }

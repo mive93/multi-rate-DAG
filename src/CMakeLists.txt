@@ -33,6 +33,7 @@ set(SIM_SRCS	Simulation/TaskSet.cpp
 				Simulation/DAGScheduler.cpp
 				Simulation/CoreManager.cpp
 				Simulation/ChainSim.cpp
+				Simulation/JitterCount.cpp
 				)
 				
 				

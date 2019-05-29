@@ -10,6 +10,8 @@
 #include <uavAP/Core/Time.h>
 #include <vector>
 
+struct JitterCounter;
+
 struct ChainSim
 {
 

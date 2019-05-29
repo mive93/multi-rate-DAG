@@ -25,6 +25,8 @@ main(int argc, char** argv)
 	{
 		seed = atoi(argv[1]);
 	}
+	else
+		seed = time(NULL);
 
 	std::ifstream file("data");
 	auto dag = dp::deserialize<PlainDAG>(file);
@@ -36,12 +38,17 @@ main(int argc, char** argv)
 	APLogger::instance()->setLogLevel(LogLevel::WARN);
 	auto sim = std::make_shared<MicroSimulator>();
 	auto dagSched = std::make_shared<DAGScheduler>(dag);
-	auto coreMan = std::make_shared<CoreManager>(10);
+	auto coreMan = std::make_shared<CoreManager>(6);
 	auto taskSet = std::make_shared<TaskSet>(set);
 	auto eval = std::make_shared<Evaluation>(evalRead);
 
 	eval->printInfo();
 	taskSet->setSeed(seed);
+
+	eval->addJitterCount(6,7);
+	eval->addJitterCount(4,5);
+	eval->addJitterCount(3,4);
+	eval->addJitterCount(2,3);
 
 	auto agg = Aggregator::aggregate( { sim, dagSched, coreMan, taskSet, eval });
 
@@ -54,15 +61,14 @@ main(int argc, char** argv)
 	}
 
 	unsigned totalMillis = 1e5;
-	unsigned increment = 2;
+	unsigned increment = 1e5;
 	unsigned time = 0;
-	float realTime = 0;
+	float realTime = 1e-10;
 
 	if (realTime > 0)
 		while (time < totalMillis)
 		{
-			APLOG_TRACE << sim->now().time_of_day()<< std::endl;
-			std::cout << dagSched->getDepMatrix() << std::endl;
+			std::cout << sim->now().time_of_day()<< std::endl;
 			sim->simulate(Milliseconds(increment));
 			time += increment;
 			std::this_thread::sleep_for(
@@ -71,7 +77,11 @@ main(int argc, char** argv)
 	else
 		sim->simulate(Milliseconds(totalMillis));
 
-	eval->exportLatency("test1");
+	eval->exportLatency("hercules");
+
+	const auto& count = eval->getJitterCount(2,3);
+	for (const auto& it : count)
+		std::cout << (int)it << std::endl;
 
 
 }

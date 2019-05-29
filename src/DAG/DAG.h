@@ -148,6 +148,9 @@ public:
 	getLatencyInfo(const std::vector<unsigned>& dataChain) const;
 
 	LatencyInfo
+	getLatencyInfoNoCutoff(const std::vector<unsigned>& dataChain) const;
+
+	LatencyInfo
 	getMinLatency(const std::vector<unsigned>& dataChain, LatencyInfo& latency) const;
 
 	MultiRateTaskset*

@@ -12,6 +12,7 @@
 #include <Evaluation/SchedulingInfo.h>
 #include <MultiRate/MultiNode.h>
 #include <Simulation/ChainSim.h>
+#include <Simulation/JitterCount.h>
 #include <uavAP/Core/Object/IAggregatableObject.h>
 #include <uavAP/Core/Object/ObjectHandle.h>
 #include <uavAP/Core/Runner/IRunnableObject.h>
@@ -69,6 +70,13 @@ public:
 	void
 	exportDataAges(const std::string& filename);
 
+
+	const std::vector<uint8_t>&
+	getJitterCount(unsigned from, unsigned to) const;
+
+	void
+	addJitterCount(unsigned from, unsigned to);
+
 private:
 
 	void
@@ -91,6 +99,7 @@ private:
 	std::pair<SchedulingCost, SchedulingConstraint> schedulingEval_;
 
 	std::vector<ChainSim> chainSims_;
+	JitterCounter jitterCounter_;
 
 	std::vector<std::vector<LatencyInfo>> latencies_;
 
