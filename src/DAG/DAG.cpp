@@ -776,7 +776,6 @@ DAG::getLatencyInfoNoCutoff(const std::vector<unsigned>& dataChain) const
 					info.reactionTime = diff;
 					info.reactionTimePair = std::make_pair(*it, first % n);
 				}
-				info.reactionTimePair = std::make_pair(*it, first % n);
 				break;
 			}
 

@@ -172,19 +172,19 @@ hercules()
 	auto gps = taskSet.addTask(50, 7, "gps");
 	auto lidar = taskSet.addTask(50, 12, "lidar");
 	auto localization = taskSet.addTask(50, 28, "localization");
-	auto ekf = taskSet.addTask(10, 6.5, "ekf");
-	auto planner = taskSet.addTask(10, 2, "planner");
-	auto control = taskSet.addTask(10, 5, "control");
-	auto camera = taskSet.addTask(25, 2, "camera");
 	auto detection = taskSet.addTask(50, 28, "detection");
 	auto fusion = taskSet.addTask(50, 25, "fusion");
+	auto camera = taskSet.addTask(25, 2, "camera");
+	auto ekf = taskSet.addTask(10, 6.5, "ekf");
+	auto planner = taskSet.addTask(10, 5, "planner");
+	auto control = taskSet.addTask(10, 4.5, "control");
 
 	gps->bcet = 5;
 	lidar->bcet = 10;
 	localization->bcet = 22;
 	ekf->bcet = 3;
-	planner->bcet = 1.5;
-	control->bcet = 3.5;
+	planner->bcet = 3.2;
+	control->bcet = 1.8;
 	camera->bcet = 1.8;
 	detection->bcet = 25;
 	fusion->bcet = 18.9;
@@ -218,6 +218,55 @@ hercules()
 	bestDAG.getOriginatingTaskset()->toTikz("hercules_taskset.tex");
 
 	PlainDAG plain(bestDAG, taskSet.getPlainTaskSet().name.size());
+
+	std::ofstream file("data");
+	dp::serialize(plain, file);
+	dp::serialize(taskSet.getPlainTaskSet(), file);
+	dp::serialize(eval, file);
+
+	tend = time(0);
+	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
+
+	return 0;
+}
+
+
+
+inline int
+simple_example()
+{
+	time_t tstart, tend;
+	tstart = time(0);
+	VariableTaskSet taskSet;
+
+	auto task1 = taskSet.addTask(10, 7, "task1");
+	auto task2 = taskSet.addTask(30, 13, "task2");
+	auto task3 = taskSet.addTask(30, 10, "task3");
+
+	task1->bcet = 5;
+	task2->bcet = 10;
+	task3->bcet = 8;
+
+	taskSet.createBaselineTaskset();
+
+	taskSet.addDataEdge(task1, task2, {0,1});
+	taskSet.addDataEdge(task2, task3);
+	taskSet.addDataEdge(task1, task3);
+
+	Evaluation eval;
+	eval.addLatency( { task1, task2, task3}, LatencyCost(1, 1.3),
+			LatencyConstraint(30, 50));
+	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(2));
+
+	const auto& bestDAG = eval.evaluate(taskSet.createDAGs());
+
+	eval.exportReactionTimes("reactions");
+	eval.exportDataAges("ages");
+
+	bestDAG.toTikz("simple_example.tex");
+	bestDAG.getOriginatingTaskset()->toTikz("simple_example_taskset.tex");
+
+	PlainDAG plain(bestDAG, 6);
 
 	std::ofstream file("data");
 	dp::serialize(plain, file);

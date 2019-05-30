@@ -309,3 +309,17 @@ Evaluation::getJitterCount(unsigned from, unsigned to) const
 {
 	return jitterCounter_.getJitterCount(from, to);
 }
+
+void
+Evaluation::exportJitterCount(const std::string& fileOffset)
+{
+	for (const auto& from : jitterCounter_.counter)
+	{
+		for (const auto& to : from.second)
+		{
+			std::ofstream jitterFile(fileOffset + "_" + std::to_string(from.first) + "_to_" + std::to_string(to.first));
+			for (const auto& count : to.second)
+				jitterFile << (int)count << std::endl;
+		}
+	}
+}

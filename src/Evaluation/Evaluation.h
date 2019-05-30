@@ -77,6 +77,9 @@ public:
 	void
 	addJitterCount(unsigned from, unsigned to);
 
+	void
+	exportJitterCount(const std::string& fileOffset);
+
 private:
 
 	void
