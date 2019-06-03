@@ -45,9 +45,9 @@ main(int argc, char** argv)
 	eval->printInfo();
 	taskSet->setSeed(seed);
 
-	eval->addJitterCount(7,8);
-	eval->addJitterCount(6,7);
-	eval->addJitterCount(5,3);
+//	eval->addJitterCount(7,8);
+//	eval->addJitterCount(6,7);
+//	eval->addJitterCount(5,3);
 
 	auto agg = Aggregator::aggregate( { sim, dagSched, coreMan, taskSet, eval });
 
@@ -59,7 +59,7 @@ main(int argc, char** argv)
 		return 1;
 	}
 
-	unsigned totalMillis = 1e7;
+	unsigned totalMillis = 1e9;
 	unsigned increment = 1e5;
 	unsigned time = 0;
 	float realTime = 1e-10;
@@ -76,7 +76,7 @@ main(int argc, char** argv)
 	else
 		sim->simulate(Milliseconds(totalMillis));
 
-	eval->exportLatency("hercules");
-	eval->exportJitterCount("hercules");
+//	eval->exportLatency("hercules");
+//	eval->exportJitterCount("hercules");
 
 }

@@ -9,6 +9,7 @@
 #define SAMPLES_SHAREDRESOURCE_HPP_
 #include <DAG/PlainDAG.h>
 #include <Evaluation/Evaluation.h>
+#include <Evaluation/Scheduling.h>
 #include <VariableTaskSet/VariableTaskSet.h>
 #include <ctime>
 #include <iostream>
@@ -259,6 +260,8 @@ simple_example()
 	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(2));
 
 	const auto& bestDAG = eval.evaluate(taskSet.createDAGs());
+
+	scheduling::scheduleDAG(bestDAG, 2, "simple_schedule.tex");
 
 	eval.exportReactionTimes("reactions");
 	eval.exportDataAges("ages");
