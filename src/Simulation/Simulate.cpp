@@ -15,6 +15,7 @@
 #include <uavAP/Core/Object/Aggregator.h>
 #include <uavAP/Core/Scheduler/MicroSimulator.h>
 #include <uavAP/Core/Runner/SimpleRunner.h>
+#include <thread>
 
 int
 main(int argc, char** argv)
@@ -67,7 +68,7 @@ main(int argc, char** argv)
 	if (realTime > 0)
 		while (time < totalMillis)
 		{
-			std::cout << sim->now().time_of_day()<< std::endl;
+			std::cout << std::chrono::duration_cast<Milliseconds>(sim->now() - TimePoint()).count() << std::endl;
 			sim->simulate(Milliseconds(increment));
 			time += increment;
 			std::this_thread::sleep_for(

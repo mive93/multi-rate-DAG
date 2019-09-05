@@ -92,7 +92,7 @@ DAGScheduler::scheduleSync()
 	for (unsigned k = 0; k < dag_.syncTimes.size(); k++)
 	{
 		scheduler->schedule(std::bind(&DAGScheduler::syncReady, this, k),
-				Microseconds(dag_.syncTimes[k] * 1000));
+				Microseconds(static_cast<int>(dag_.syncTimes[k] * 1000)));
 	}
 
 	scheduler->schedule(std::bind(&DAGScheduler::reset, this), Microseconds(dag_.period * 1000));

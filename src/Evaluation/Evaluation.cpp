@@ -171,10 +171,10 @@ Evaluation::printInfo() const
 	{
 		std::cout << "Data Ages" << std::endl;
 		for (const auto& age : chain.ages)
-			std::cout << age.total_microseconds() << std::endl;
+			std::cout << std::chrono::duration_cast<Microseconds>(age).count() << std::endl;
 		std::cout << "Reaction time" << std::endl;
 		for (const auto& react : chain.reactions)
-			std::cout << react.total_microseconds() << std::endl;
+			std::cout << std::chrono::duration_cast<Microseconds>(react).count() << std::endl;
 	}
 }
 
@@ -295,10 +295,10 @@ Evaluation::exportLatency(const std::string& fileOffset)
 	{
 		std::ofstream ageFile(fileOffset + "_chain" + std::to_string(k) + "_age");
 		for (const auto& age : chain.ages)
-			ageFile << age.total_microseconds() << std::endl;
+			ageFile << std::chrono::duration_cast<Microseconds>(age).count()<< std::endl;
 		std::ofstream reactFile(fileOffset + "_chain" + std::to_string(k) + "_react");
 		for (const auto& react : chain.reactions)
-			reactFile << react.total_microseconds() << std::endl;
+			reactFile << std::chrono::duration_cast<Microseconds>(react).count() << std::endl;
 
 		k++;
 	}
