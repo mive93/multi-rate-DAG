@@ -282,6 +282,57 @@ simple_example()
 	return 0;
 }
 
+inline int
+micaela_test()
+{
+	time_t tstart, tend;
+	tstart = time(0);
+	VariableTaskSet taskSet;
+
+	auto task2 = taskSet.addTask(30, 3, "task1");
+	auto task1 = taskSet.addTask(10, 4, "task2");
+	auto task3 = taskSet.addTask(15, 4, "task3");
+
+	task2->bcet = 3;
+	task1->bcet = 4;
+	task3->bcet = 4;
+
+	taskSet.createBaselineTaskset();
+
+	taskSet.addDataEdge(task1, task2, {0,1,2});
+	taskSet.addDataEdge(task2, task3, {0,1});
+	
+
+	Evaluation eval;
+	eval.addLatency( { task1, task2, task3}, LatencyCost(1, 1.3),
+			LatencyConstraint(100, 100));
+	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(2));
+
+	const auto& bestDAG = eval.evaluate(taskSet.createDAGs());
+
+	std::cout << bestDAG.getNodeInfo() << std::endl;
+
+	scheduling::scheduleDAG(bestDAG, 2, "simple_schedule.tex");
+
+	eval.exportReactionTimes("reactions");
+	eval.exportDataAges("ages");
+
+	bestDAG.toTikz("simple_example.tex");
+	bestDAG.getOriginatingTaskset()->toTikz("simple_example_taskset.tex");
+
+	PlainDAG plain(bestDAG, 6);
+
+	std::ofstream file("data");
+	dp::serialize(plain, file);
+	dp::serialize(taskSet.getPlainTaskSet(), file);
+	dp::serialize(eval, file);
+
+	tend = time(0);
+	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
+
+	return 0;
+}
+
 }
 
 #endif /* SAMPLES_SHAREDRESOURCE_HPP_ */

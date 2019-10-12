@@ -48,7 +48,8 @@ public:
 	createBaselineDAG();
 
 	const std::vector<DAG>&
-	createDAGs();
+	createDAGs(bool saidi=false);
+
 
 	std::shared_ptr<DummyNodes>
 	getDummyNodes() const;

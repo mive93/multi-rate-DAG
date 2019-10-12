@@ -17,6 +17,7 @@
 #include <uavAP/Core/Object/ObjectHandle.h>
 #include <uavAP/Core/Runner/IRunnableObject.h>
 #include <uavAP/Core/TimeProvider/ITimeProvider.h>
+#include "Benchmark/DataFiles.h"
 
 class Evaluation;
 namespace dp
@@ -44,7 +45,7 @@ public:
 	addScheduling(const SchedulingCost& cost, const SchedulingConstraint& constraint);
 
 	const DAG&
-	evaluate(const std::vector<DAG>& dags);
+	evaluate(const std::vector<DAG>& dags, DataFiles *f = nullptr);
 
 	float
 	evaluate(const DAG& dag);

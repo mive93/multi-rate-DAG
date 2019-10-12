@@ -113,21 +113,26 @@ MultiRateTaskset::createBaselineDAG()
 	return baselineDAG_;
 }
 
+
+
 const std::vector<DAG>&
-MultiRateTaskset::createDAGs()
+MultiRateTaskset::createDAGs(bool saidi)
 {
 	std::vector<std::vector<std::vector<Edge>>> edgeSets;
 
 	std::vector<int> permutSets;
 	for (auto& edge : edges_)
 	{
-		edgeSets.push_back(edge.translateToEdges());
+		if (saidi)
+			edgeSets.push_back(edge.translateToEdgesSaidi());
+		else
+			edgeSets.push_back(edge.translateToEdges());
 		permutSets.push_back(edgeSets.back().size());
 	}
 	permutSets.push_back(1);
 
 	std::vector<int> permutation(edgeSets.size(), 0);
-	int numPermutations = 1;
+	long long unsigned numPermutations = 1;
 	for (const auto& it : edgeSets)
 		numPermutations *= it.size();
 

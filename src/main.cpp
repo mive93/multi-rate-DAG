@@ -23,8 +23,9 @@
 
 #include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
 
-void
-taskset1()
+#include "Benchmark/Benchmark.h"
+
+void taskset1()
 {
 	MultiRateTaskset taskSet;
 
@@ -42,11 +43,9 @@ taskset1()
 	auto dags = taskSet.createDAGs();
 
 	dags[2].toTikz("test.tex");
-
 }
 
-int
-taskset3()
+int taskset3()
 {
 	time_t tstart, tend;
 	tstart = time(0);
@@ -85,9 +84,9 @@ taskset3()
 	unsigned k = 0;
 	int n_processors = 4;
 
-	for (auto& dag : dags)
+	for (auto &dag : dags)
 	{
-		auto info = dag.getLatencyInfo( { 0, 0, 2, 3, 4 });
+		auto info = dag.getLatencyInfo({0, 0, 2, 3, 4});
 		if (info.reactionTime < numEdges)
 		{
 			numEdges = info.reactionTime;
@@ -102,39 +101,52 @@ taskset3()
 	scheduling::scheduleDAG(dags[id], n_processors, "schedule_test.tex", true);
 	dags[id].getOriginatingTaskset()->toTikz("cool.tex");
 	std::cout << dags[id].getNodeInfo() << std::endl;
-	std::cout << dags[id].getLatencyInfo( { 0, 4 }) << std::endl;
+	std::cout << dags[id].getLatencyInfo({0, 4}) << std::endl;
 	//dags[id].getLatencyInfoIterative( { 1,5,3,4});
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
 
 	return 0;
-
 }
 
-int
-taskset2()
+int taskset2()
 {
+	time_t tstart, tend;
+	tstart = time(0);
 	MultiRateTaskset taskSet;
 
-	auto task1 = taskSet.addTask(10, 9, "sensor1");
-	auto task2 = taskSet.addTask(10, 5, "sensor2");
+	auto task1 = taskSet.addTask(10, 2, "sensor1");
+	auto task2 = taskSet.addTask(10, 3, "sensor2");
 	auto task3 = taskSet.addTask(20, 2, "act");
+	auto task4 = taskSet.addTask(5, 1, "test");
 
-	taskSet.addDataEdge(task1, task2, 1);
-	taskSet.addDataEdge(task1, task3, 0);
+	// taskSet.addDataEdge(task1, task2, 0);
+	taskSet.addDataEdge(task1, task3, 1);
+	taskSet.addDataEdge(task4, task2, 2);
 
-//	taskSet.addPrecedenceEdge(task1, task2);
+	taskSet.addPrecedenceEdge(task1, task2);
+
+	// taskSet.createBaselineTaskset();
+
+	// auto& allDags = taskSet.createDAGs();
+
+	// std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
 	taskSet.createBaselineDAG();
 
 	auto dags = taskSet.createDAGs();
 
+	if (dags.size() > 0)
+		dags[0].toTikz("taskset2.tex");
+
+	tend = time(0);
+	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
+
 	return 0;
 }
 
-int
-multiTaskset()
+int multiTaskset()
 {
 	time_t tstart, tend;
 	tstart = time(0);
@@ -145,52 +157,52 @@ multiTaskset()
 	auto task3 = taskSet.addTask(10, 4.8, "planner");
 	auto task4 = taskSet.addTask(10, 7, "controller");
 	auto task5 = taskSet.addTask(20, 8, "act");
-//	auto task6 = taskSet.addTask(30, 21, "train");
+	//	auto task6 = taskSet.addTask(30, 21, "train");
 
 	task1->bcet = 2;
 	task2->bcet = 3.1;
 	task3->bcet = 2.4;
 	task4->bcet = 6.5;
 	task5->bcet = 4.7;
-//	task6->bcet = 15;
-//	task3->bcet = 4;
-//	auto task7 = taskSet.addTask(80, 50, "independent");
+	//	task6->bcet = 15;
+	//	task3->bcet = 4;
+	//	auto task7 = taskSet.addTask(80, 50, "independent");
 
-	taskSet.addDataEdge(task3, task4, { 0, 1 });
+	taskSet.addDataEdge(task3, task4, {0, 1});
 
-	taskSet.addDataEdge(task1, task3, { 0, 1, 2 });
-	taskSet.addDataEdge(task1, task4, { 0, 1, 2 });
-	taskSet.addDataEdge(task2, task3, { 0, 1, 2 });
-	taskSet.addDataEdge(task2, task4, { 0, 1, 2 });
-	taskSet.addDataEdge(task4, task5, { 0, 1, 2 });
-//	taskSet.addDataEdge(task1, task6, { 0, 1, 2 });
-//	taskSet.addDataEdge(task2, task6, { 0, 1, 2 });
-//	taskSet.addDataEdge(task4, task6, { 0, 1, 2, 3 });
+	taskSet.addDataEdge(task1, task3, {0, 1, 2});
+	taskSet.addDataEdge(task1, task4, {0, 1, 2});
+	taskSet.addDataEdge(task2, task3, {0, 1, 2});
+	taskSet.addDataEdge(task2, task4, {0, 1, 2});
+	taskSet.addDataEdge(task4, task5, {0, 1, 2});
+	//	taskSet.addDataEdge(task1, task6, { 0, 1, 2 });
+	//	taskSet.addDataEdge(task2, task6, { 0, 1, 2 });
+	//	taskSet.addDataEdge(task4, task6, { 0, 1, 2, 3 });
 
 	taskSet.createBaselineTaskset();
 
-	auto& allDags = taskSet.createDAGs();
+	auto &allDags = taskSet.createDAGs();
 
 	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
 	Evaluation eval;
-	eval.addLatency( { task1, task3, task4, task5 }, LatencyCost(1, 15),
-			LatencyConstraint(200, 200));
-	eval.addLatency( { task2, task3, task4, task5 }, LatencyCost(1, 3),
-			LatencyConstraint(150, 150));
-//	eval.addLatency( { task1, task4, task6 }, LatencyCost(1, 3), LatencyConstraint(150, 150));
-//	eval.addLatency({task1, task3}, LatencyCost(1,1), LatencyConstraint(25,25));
+	eval.addLatency({task1, task3, task4, task5}, LatencyCost(1, 15),
+					LatencyConstraint(200, 200));
+	eval.addLatency({task2, task3, task4, task5}, LatencyCost(1, 3),
+					LatencyConstraint(150, 150));
+	//	eval.addLatency( { task1, task4, task6 }, LatencyCost(1, 3), LatencyConstraint(150, 150));
+	//	eval.addLatency({task1, task3}, LatencyCost(1,1), LatencyConstraint(25,25));
 	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(6));
 
-	const auto& bestDAG = eval.evaluate(allDags);
+	const auto &bestDAG = eval.evaluate(allDags);
 
 	eval.exportReactionTimes("reactions");
 
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
 	std::cout << bestDAG.getNodeInfo() << std::endl;
-	bestDAG.getLatencyInfo( { 1, 1, 2, 3, 4 });
-//	scheduling::scheduleDAG(bestDAG, 4, "schedule_test.tex");
+	bestDAG.getLatencyInfo({1, 1, 2, 3, 4});
+	//	scheduling::scheduleDAG(bestDAG, 4, "schedule_test.tex");
 
 	PlainDAG plain(bestDAG, 6);
 
@@ -205,8 +217,7 @@ multiTaskset()
 	return 0;
 }
 
-int
-multiTaskset2()
+int multiTaskset2()
 {
 	time_t tstart, tend;
 	tstart = time(0);
@@ -217,18 +228,18 @@ multiTaskset2()
 
 	task2->bcet = 3;
 
-	taskSet.addDataEdge(task1, task2, { 0, 1, 2 });
+	taskSet.addDataEdge(task1, task2, {0, 1, 2});
 
 	taskSet.createBaselineTaskset();
 
-	auto& allDags = taskSet.createDAGs();
+	auto &allDags = taskSet.createDAGs();
 
 	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
 	Evaluation eval;
-	eval.addLatency( { task1, task2 }, LatencyCost(1, 1), LatencyConstraint(60, 60));
+	eval.addLatency({task1, task2}, LatencyCost(1, 1), LatencyConstraint(60, 60));
 
-	const auto& bestDAG = eval.evaluate(allDags);
+	const auto &bestDAG = eval.evaluate(allDags);
 
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
@@ -248,8 +259,7 @@ multiTaskset2()
 	return 0;
 }
 
-int
-multiTasksetPareto()
+int multiTasksetPareto()
 {
 	time_t tstart, tend;
 	tstart = time(0);
@@ -260,7 +270,7 @@ multiTasksetPareto()
 	auto task3 = taskSet.addTask(10, 7.2, "think");
 	auto task4 = taskSet.addTask(20, 7, "move");
 	auto task5 = taskSet.addTask(40, 8, "poop");
-//	auto task6 = taskSet.addTask(30, 21, "train");
+	//	auto task6 = taskSet.addTask(30, 21, "train");
 
 	task1->bcet = 2;
 	task2->bcet = 3.1;
@@ -268,28 +278,27 @@ multiTasksetPareto()
 	task4->bcet = 6.5;
 	task5->bcet = 4.7;
 
-
-	taskSet.addDataEdge(task1, task3, { 0, 1 });
-	taskSet.addDataEdge(task2, task3, { 0, 1, 2, 3, 4});
-	taskSet.addDataEdge(task2, task4, { 0, 1, 2 });
-	taskSet.addDataEdge(task4, task5, { 0, 1, 2 });
-	taskSet.addDataEdge(task1, task5, { 0,1,2,3,4 });
-	taskSet.addDataEdge(task2, task5, { 0,1 });
+	taskSet.addDataEdge(task1, task3, {0, 1});
+	taskSet.addDataEdge(task2, task3, {0, 1, 2, 3, 4});
+	taskSet.addDataEdge(task2, task4, {0, 1, 2});
+	taskSet.addDataEdge(task4, task5, {0, 1, 2});
+	taskSet.addDataEdge(task1, task5, {0, 1, 2, 3, 4});
+	taskSet.addDataEdge(task2, task5, {0, 1});
 
 	taskSet.createBaselineTaskset();
 
-	auto& allDags = taskSet.createDAGs();
+	auto &allDags = taskSet.createDAGs();
 
 	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
 	Evaluation eval;
-	eval.addLatency( { task1, task5, task2}, LatencyCost(1, 1),
-			LatencyConstraint(200, 200));
-	eval.addLatency( { task2, task3, task4, task5 }, LatencyCost(1, 1),
-			LatencyConstraint(150, 150));
+	eval.addLatency({task1, task5, task2}, LatencyCost(1, 1),
+					LatencyConstraint(200, 200));
+	eval.addLatency({task2, task3, task4, task5}, LatencyCost(1, 1),
+					LatencyConstraint(150, 150));
 	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(4));
 
-	const auto& bestDAG = eval.evaluate(allDags);
+	const auto &bestDAG = eval.evaluate(allDags);
 
 	eval.exportReactionTimes("reactions");
 	eval.exportDataAges("ages");
@@ -311,13 +320,14 @@ multiTasksetPareto()
 	return 0;
 }
 
-
-
-int
-main()
+int main()
 {
 
-	return samples::hercules();
+	// return taskset2();
+	DataFiles f("reactions.csv", "data_age.csv", "permutations.csv", "schedulable_dags.csv");
 
+	for(int i=0; i<1; i++)
+	{
+		WatersChallenge2015 test(5, 10, 1.5, WatersChallenge2015::TEST, f, 4);
+	}
 }
-

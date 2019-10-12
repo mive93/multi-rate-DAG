@@ -89,3 +89,64 @@ MultiEdge::translateToEdges()
 	return edgeSets;
 
 }
+
+
+
+std::vector<std::vector<Edge> >
+MultiEdge::translateToEdgesSaidi()
+{
+
+	std::cout<<"Saidi edges"<<std::endl;
+	auto fromNodes = from->nodes;
+	auto toNodes = to->nodes;
+
+	int numFrom = fromNodes.size();
+	int numTo = toNodes.size();
+
+	std::cout<<"from: "<<numFrom<<std::endl;
+	std::cout<<"to: "<<numTo<<std::endl;
+
+	std::vector<std::vector<Edge>> edgeSets;
+
+	unsigned maxPeriod = std::max(to->period, from->period);
+	unsigned minPeriod = std::min(to->period, from->period);
+
+	if (dependency == Dependency::PRECEDENCE)
+	{
+		std::vector<Edge> edgeSet;
+		int min = std::min(numTo, numFrom);
+		for (int k = 0; k < min; k++)
+		{
+			Edge edge;
+			if (numFrom > numTo)
+			{
+				int from = numFrom / min * (k + 1) - 1;
+				int to = k;
+				edge = Edge(fromNodes[from], toNodes[to]);
+			}
+			else
+			{
+				int from = k;
+				int to = numTo / min * k;
+				edge = Edge(fromNodes[from], toNodes[to]);
+			}
+			edgeSet.push_back(edge);
+		}
+		edgeSets.push_back(edgeSet);
+		return edgeSets;
+	}
+
+	//Data dependency
+	std::vector<Edge> edgeSet;
+	if(numFrom < numTo)
+		for(int i=0; i<numFrom; i++)
+			edgeSet.push_back(Edge(fromNodes[i], toNodes[numTo/numFrom*(i+1)-1]));
+	else
+		for(int i=0; i<numTo; i++)
+			edgeSet.push_back(Edge(fromNodes[numFrom/numTo*(i+1)-1], toNodes[i]));
+	
+	edgeSets.push_back(edgeSet);
+
+	return edgeSets;
+
+}

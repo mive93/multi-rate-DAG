@@ -13,43 +13,41 @@
 #include <cmath>
 #include <iostream>
 
-void
-Evaluation::addLatency(const std::vector<std::shared_ptr<MultiNode>>& chain,
-		const LatencyCost& cost, const LatencyConstraint& constraint)
+void Evaluation::addLatency(const std::vector<std::shared_ptr<MultiNode>> &chain,
+							const LatencyCost &cost, const LatencyConstraint &constraint)
 {
 	latencyEval_.push_back(std::make_pair(taskChainToNum(chain), std::make_pair(cost, constraint)));
 }
 
-void
-Evaluation::addChain(const std::vector<unsigned>& chain, const LatencyCost& cost,
-		const LatencyConstraint& constraint)
+void Evaluation::addChain(const std::vector<unsigned> &chain, const LatencyCost &cost,
+						  const LatencyConstraint &constraint)
 {
 	latencyEval_.push_back(std::make_pair(chain, std::make_pair(cost, constraint)));
 }
 
-const DAG&
-Evaluation::evaluate(const std::vector<DAG>& dags)
+const DAG &
+Evaluation::evaluate(const std::vector<DAG> &dags, DataFiles *f)
 {
 	std::vector<float> cost(dags.size(), 0.0);
 
 	unsigned invalidDags = 0;
 	int k = 0;
-	for (const auto& dag : dags)
+	for (const auto &dag : dags)
 	{
-		std::cout << "Evaluating DAG " << k << "/" <<dags.size() << " ";
+		// std::cout << "Evaluating DAG " << k << "/" <<dags.size() << " ";
 		cost[k] = evaluate(dag);
 		if (std::isnan(cost[k++]))
 		{
 			invalidDags++;
-			std::cout << "invalid" << std::endl;
+			// std::cout << "invalid" << std::endl;
 		}
-		else
-			std::cout << "cost: " << cost[k-1] << std::endl;
-
-
+		// else
+		// std::cout << "cost: " << cost[k-1] << std::endl;
 	}
 
 	std::cout << "Num invalid dags: " << invalidDags << std::endl;
+	if (f)
+		f->sd << dags.size() - invalidDags << ";";
 
 	if (invalidDags == dags.size())
 	{
@@ -69,25 +67,31 @@ Evaluation::evaluate(const std::vector<DAG>& dags)
 	}
 
 	std::cout << "Best DAG: " << bestDAG << ", with total cost: " << minCost << std::endl
-			<< std::endl;
-	for (const auto& eval : latencyEval_)
+			  << std::endl;
+	for (const auto &eval : latencyEval_)
 	{
 		printChain(eval.first);
-		std::cout << dags[bestDAG].getLatencyInfoNoCutoff(eval.first) << std::endl;
+
+		auto latInfo = dags[bestDAG].getLatencyInfoNoCutoff(eval.first);
+		std::cout << latInfo << std::endl;
+		if (f)
+		{
+			f->addR(latInfo.reactionTime);
+			f->addDA(latInfo.maxLatency);
+		}
 	}
 
 	std::cout << "Cores needed: "
-			<< getSchedulingInfo(dags[bestDAG], schedulingEval_.second).numCoresNeeded << std::endl;
+			  << getSchedulingInfo(dags[bestDAG], schedulingEval_.second).numCoresNeeded << std::endl;
 
 	return dags[bestDAG];
 }
 
-float
-Evaluation::evaluate(const DAG& dag)
+float Evaluation::evaluate(const DAG &dag)
 {
 	float cost = 0;
 	std::vector<LatencyInfo> latencies;
-	for (const auto& eval : latencyEval_)
+	for (const auto &eval : latencyEval_)
 	{
 		auto info = dag.getLatencyInfoNoCutoff(eval.first);
 
@@ -99,7 +103,6 @@ Evaluation::evaluate(const DAG& dag)
 		}
 
 		cost += eval.second.first.getCost(info);
-
 	}
 
 	SchedulingInfo info = getSchedulingInfo(dag, schedulingEval_.second);
@@ -114,29 +117,27 @@ Evaluation::evaluate(const DAG& dag)
 	return cost;
 }
 
-void
-Evaluation::addScheduling(const SchedulingCost& cost, const SchedulingConstraint& constraint)
+void Evaluation::addScheduling(const SchedulingCost &cost, const SchedulingConstraint &constraint)
 {
 	schedulingEval_ = std::make_pair(cost, constraint);
 }
 
 std::vector<unsigned>
-Evaluation::taskChainToNum(const std::vector<std::shared_ptr<MultiNode>>& chain)
+Evaluation::taskChainToNum(const std::vector<std::shared_ptr<MultiNode>> &chain)
 {
 	std::vector<unsigned> c;
-	for (const auto& node : chain)
+	for (const auto &node : chain)
 	{
 		c.push_back(node->id - 1);
 	}
 	return c;
 }
 
-void
-Evaluation::printChain(const std::vector<unsigned>& chain) const
+void Evaluation::printChain(const std::vector<unsigned> &chain) const
 {
 	std::cout << "Chain: ";
 
-	for (const auto& n : chain)
+	for (const auto &n : chain)
 	{
 		std::cout << "->" << n;
 	}
@@ -144,7 +145,7 @@ Evaluation::printChain(const std::vector<unsigned>& chain) const
 }
 
 SchedulingInfo
-Evaluation::getSchedulingInfo(const DAG& dag, const SchedulingConstraint& constraint)
+Evaluation::getSchedulingInfo(const DAG &dag, const SchedulingConstraint &constraint)
 {
 	float u = dag.getOriginatingTaskset()->getUtilization();
 
@@ -157,36 +158,33 @@ Evaluation::getSchedulingInfo(const DAG& dag, const SchedulingConstraint& constr
 	return SchedulingInfo(constraint.maxCores + 1);
 }
 
-void
-Evaluation::printInfo() const
+void Evaluation::printInfo() const
 {
-	for (const auto& eval : latencyEval_)
+	for (const auto &eval : latencyEval_)
 	{
 		printChain(eval.first);
 		std::cout << eval.second.first << std::endl;
 		std::cout << eval.second.second << std::endl;
 	}
 
-	for (const auto& chain : chainSims_)
+	for (const auto &chain : chainSims_)
 	{
 		std::cout << "Data Ages" << std::endl;
-		for (const auto& age : chain.ages)
+		for (const auto &age : chain.ages)
 			std::cout << std::chrono::duration_cast<Microseconds>(age).count() << std::endl;
 		std::cout << "Reaction time" << std::endl;
-		for (const auto& react : chain.reactions)
+		for (const auto &react : chain.reactions)
 			std::cout << std::chrono::duration_cast<Microseconds>(react).count() << std::endl;
 	}
 }
 
-void
-Evaluation::notifyAggregationOnUpdate(const Aggregator& agg)
+void Evaluation::notifyAggregationOnUpdate(const Aggregator &agg)
 {
 	taskSet_.setFromAggregationIfNotSet(agg);
 	timeProvider_.setFromAggregationIfNotSet(agg);
 }
 
-bool
-Evaluation::run(RunStage stage)
+bool Evaluation::run(RunStage stage)
 {
 	switch (stage)
 	{
@@ -222,10 +220,9 @@ Evaluation::run(RunStage stage)
 	return false;
 }
 
-void
-Evaluation::initChainSims()
+void Evaluation::initChainSims()
 {
-	for (const auto& lat : latencyEval_)
+	for (const auto &lat : latencyEval_)
 	{
 		ChainSim sim;
 		sim.chain = lat.first;
@@ -233,23 +230,21 @@ Evaluation::initChainSims()
 	}
 }
 
-void
-Evaluation::readTask(unsigned task)
+void Evaluation::readTask(unsigned task)
 {
 	auto tp = timeProvider_.get();
 	auto time = tp->now();
-	for (auto& sim : chainSims_)
+	for (auto &sim : chainSims_)
 		sim.read(task, time);
 	jitterCounter_.read(task);
 }
 
-void
-Evaluation::exportReactionTimes(const std::string& filename)
+void Evaluation::exportReactionTimes(const std::string &filename)
 {
 	std::ofstream file(filename);
-	for (const auto& reacts : latencies_)
+	for (const auto &reacts : latencies_)
 	{
-		for (const auto& time : reacts)
+		for (const auto &time : reacts)
 		{
 			file << time.reactionTime << " ";
 		}
@@ -257,13 +252,12 @@ Evaluation::exportReactionTimes(const std::string& filename)
 	}
 }
 
-void
-Evaluation::exportDataAges(const std::string& filename)
+void Evaluation::exportDataAges(const std::string &filename)
 {
 	std::ofstream file(filename);
-	for (const auto& ages : latencies_)
+	for (const auto &ages : latencies_)
 	{
-		for (const auto& time : ages)
+		for (const auto &time : ages)
 		{
 			file << time.maxLatency << " ";
 		}
@@ -271,54 +265,50 @@ Evaluation::exportDataAges(const std::string& filename)
 	}
 }
 
-void
-Evaluation::addJitterCount(unsigned from, unsigned to)
+void Evaluation::addJitterCount(unsigned from, unsigned to)
 {
 	jitterCounter_.addJitterCount(from, to);
 }
 
-void
-Evaluation::writeTask(unsigned task)
+void Evaluation::writeTask(unsigned task)
 {
 	auto tp = timeProvider_.get();
 	auto time = tp->now();
-	for (auto& sim : chainSims_)
+	for (auto &sim : chainSims_)
 		sim.write(task, time);
 	jitterCounter_.write(task);
 }
 
-void
-Evaluation::exportLatency(const std::string& fileOffset)
+void Evaluation::exportLatency(const std::string &fileOffset)
 {
 	unsigned k = 0;
-	for (const auto& chain : chainSims_)
+	for (const auto &chain : chainSims_)
 	{
 		std::ofstream ageFile(fileOffset + "_chain" + std::to_string(k) + "_age");
-		for (const auto& age : chain.ages)
-			ageFile << std::chrono::duration_cast<Microseconds>(age).count()<< std::endl;
+		for (const auto &age : chain.ages)
+			ageFile << std::chrono::duration_cast<Microseconds>(age).count() << std::endl;
 		std::ofstream reactFile(fileOffset + "_chain" + std::to_string(k) + "_react");
-		for (const auto& react : chain.reactions)
+		for (const auto &react : chain.reactions)
 			reactFile << std::chrono::duration_cast<Microseconds>(react).count() << std::endl;
 
 		k++;
 	}
 }
 
-const std::vector<uint8_t>&
+const std::vector<uint8_t> &
 Evaluation::getJitterCount(unsigned from, unsigned to) const
 {
 	return jitterCounter_.getJitterCount(from, to);
 }
 
-void
-Evaluation::exportJitterCount(const std::string& fileOffset)
+void Evaluation::exportJitterCount(const std::string &fileOffset)
 {
-	for (const auto& from : jitterCounter_.counter)
+	for (const auto &from : jitterCounter_.counter)
 	{
-		for (const auto& to : from.second)
+		for (const auto &to : from.second)
 		{
 			std::ofstream jitterFile(fileOffset + "_" + std::to_string(from.first) + "_to_" + std::to_string(to.first));
-			for (const auto& count : to.second)
+			for (const auto &count : to.second)
 				jitterFile << (int)count << std::endl;
 		}
 	}
