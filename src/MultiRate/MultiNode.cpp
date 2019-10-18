@@ -28,8 +28,15 @@ MultiNode::createNodes(unsigned hyperPeriod)
 	return nodes;
 }
 
-float
-MultiNode::getUtilization() const
+float MultiNode::getUtilization() const
 {
 	return wcet / period;
+}
+
+void MultiNode::freeMem()
+{
+	for (auto &n : nodes)
+		n.reset();
+	nodes.clear();
+	name.clear();
 }

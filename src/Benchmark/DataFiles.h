@@ -11,16 +11,19 @@ class DataFiles
 private:
     std::ofstream r;
     std::ofstream da;
-    int val_index = 0;
 
 public:
-    std::ofstream p;
+    int val_index = 0;
+
     std::ofstream sd;
+    std::ofstream t;
+    std::ofstream d;
+    std::ofstream p;
     std::vector<std::vector<float>> r_values;
     std::vector<std::vector<float>> da_values;
 
     DataFiles();
-    DataFiles(const std::string &reactions, const std::string &data_age, const std::string &permutations, const std::string &schedulable_dags);
+    DataFiles(const std::string &reactions, const std::string &data_age, const std::string &schedulable_dags, const std::string &times, const std::string &deletions, const std::string &permutations);
     ~DataFiles();
     void newLine();
 

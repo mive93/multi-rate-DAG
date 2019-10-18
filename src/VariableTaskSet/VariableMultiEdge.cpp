@@ -7,9 +7,6 @@
  */
 #include <VariableTaskSet/VariableMultiEdge.h>
 
-
-
-
 std::vector<MultiEdge>
 VariableMultiEdge::translateToMultiEdges()
 {
@@ -27,4 +24,15 @@ VariableMultiEdge::translateToMultiEdges()
 	}
 
 	return edges;
+}
+
+void VariableMultiEdge::freeMem()
+{
+	from->freeMem();
+	from.reset();
+
+	to->freeMem();
+	to.reset();
+
+	jitter.clear();
 }

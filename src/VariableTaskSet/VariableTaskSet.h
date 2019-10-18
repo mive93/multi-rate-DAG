@@ -10,6 +10,8 @@
 #include <MultiRate/MultiRateTaskset.h>
 #include <VariableTaskSet/PlainTaskSet.h>
 #include <VariableTaskSet/VariableMultiEdge.h>
+#include "Benchmark/DataFiles.h"
+
 #include <vector>
 
 struct VariableMultiNode;
@@ -17,58 +19,51 @@ struct VariableMultiNode;
 class VariableTaskSet
 {
 public:
-
 	VariableTaskSet() = default;
 
-	std::shared_ptr<MultiNode>
-	addTask(unsigned period, float wcet, float deadline, const std::string& name = std::string());
+	~VariableTaskSet();
 
 	std::shared_ptr<MultiNode>
-	addTask(unsigned period, float wcet, const std::string& name = std::string());
+	addTask(unsigned period, float wcet, float deadline, const std::string &name = std::string());
 
-	const MultiEdge&
+	std::shared_ptr<MultiNode>
+	addTask(unsigned period, float wcet, const std::string &name = std::string());
+
+	const MultiEdge &
 	addPrecedenceEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to);
 
-	const VariableMultiEdge&
+	const VariableMultiEdge &
 	addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to, std::vector<unsigned> jitters);
 
-	const VariableMultiEdge&
+	const VariableMultiEdge &
 	addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to, unsigned maxJitter);
 
-	const VariableMultiEdge&
+	const VariableMultiEdge &
 	addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<MultiNode> to);
 
-	MultiRateTaskset&
+	MultiRateTaskset &
 	createBaselineTaskset();
 
-	const std::vector<MultiRateTaskset>&
+	const std::vector<MultiRateTaskset> &
 	createTasksets();
 
-	const std::vector<DAG>&
-	createDAGs();
+	const std::vector<DAG> &
+	createDAGs(DataFiles *f=nullptr);
 
 	float
 	getUtilization() const;
 
+	int
+	computePermutations();
+
 	PlainTaskSet
 	getPlainTaskSet() const;
 
-
 private:
-
 	std::vector<VariableMultiEdge> edges_;
-
 	std::vector<MultiRateTaskset> tasksets_;
-
 	MultiRateTaskset baselineTaskset_;
-
 	std::vector<DAG> allDAGs_;
-
-
-
 };
-
-
-
 
 #endif /* VARIABLETASKSET_VARIABLETASKSET_H_ */

@@ -75,6 +75,7 @@ WatersChallenge2015::WatersChallenge2015(const int n_tasks, const int n_chains, 
     for (std::size_t i = 0; i < periods_.size(); i++)
         std::cout << periods_[i] << "\t" << p_shares_[i] << "\t" << acet_[i] << "\t" << fmin_best_[i] << "\t" << fmax_best_[i] << "\t" << fmin_worst_[i] << "\t" << fmax_worst_[i] << "\t" << std::endl;
 
+    generator_.seed(time(NULL));
     p_distribution_ = new std::discrete_distribution<int>(p_shares_.begin(), p_shares_.end());
     spic_distribution_ = new std::discrete_distribution<int>(spic_shares_.begin(), spic_shares_.end());
     dpic_distribution_ = new std::discrete_distribution<int>(dpic_shares_.begin(), dpic_shares_.end());
@@ -84,79 +85,99 @@ WatersChallenge2015::WatersChallenge2015(const int n_tasks, const int n_chains, 
         comunication_distribution_.push_back(distribution);
     }
 
-    std::vector<Task> taskset;
+    n_cores_ = n_cores;
+    // std::vector<Task> taskset;
 
     switch (generation)
     {
     case ONLY_N:
-        taskset = generateTasksetGivenN(n_tasks);
+        taskset_ = generateTasksetGivenN(n_tasks);
         break;
     case ONLY_U:
-        taskset = generateTasksetGivenU(utilization);
+        taskset_ = generateTasksetGivenU(utilization);
         break;
     case N_AND_U:
-        taskset = generateTasksetUUnifast(n_tasks, utilization);
+        taskset_ = generateTasksetUUnifast(n_tasks, utilization);
         break;
-    case TEST:
+    case TEST_1:
         Task t1, t2, t3;
         t1.period_ = 4;
         t1.wcet_ = 2;
         t1.bcet_ = 2;
-        taskset.push_back(t1);
+        taskset_.push_back(t1);
 
         t2.period_ = 8;
         t2.wcet_ = 1;
         t2.bcet_ = 1;
-        taskset.push_back(t2);
+        taskset_.push_back(t2);
 
         t3.period_ = 2;
         t3.wcet_ = 1;
         t3.bcet_ = 1;
-        taskset.push_back(t3);
+        taskset_.push_back(t3);
+
+        period_mult_ = 1;
+        break;
+    case TEST_2:
+        Task t4;
+        t1.period_ = 100;
+        t1.wcet_ = 86;
+        t1.bcet_ = 86;
+        taskset_.push_back(t1);
+
+        t2.period_ = 100;
+        t2.wcet_ = 31;
+        t2.bcet_ = 31;
+        taskset_.push_back(t2);
+
+        t3.period_ = 200;
+        t3.wcet_ = 79;
+        t3.bcet_ = 79;
+        taskset_.push_back(t3);
+
+        t4.period_ = 200;
+        t4.wcet_ = 38;
+        t4.bcet_ = 38;
+        taskset_.push_back(t4);
 
         period_mult_ = 1;
         break;
     };
 
-    time_t tstart, tend;
-    tstart = time(0);
-
-    std::sort(taskset.begin(), taskset.end(), compareTasksPeriod);
-
-    std::vector<std::vector<int>> chains;
-    if (generation == TEST)
+    // std::vector<std::vector<int>> chains;
+    if (generation == TEST_1)
     {
-
-        chains.push_back({1, 2, 0});
+        chains_.push_back({0, 1, 2});
+    }
+    else if (generation == TEST_2)
+    {
+        chains_.push_back({3, 2, 1, 0});
     }
     else
-        chains = generateChains(taskset, n_chains);
+    {
+        std::sort(taskset_.begin(), taskset_.end(), compareTasksPeriod);
+        chains_ = generateChains(taskset_, n_chains);
+    }
 
-    Eigen::MatrixXf edges = Eigen::MatrixXf::Zero(n_tasks, n_tasks);
+    edges_ = Eigen::MatrixXf::Zero(n_tasks, n_tasks);
 
-    for (auto c : chains)
+    for (auto c : chains_)
     {
         for (size_t i = 0; i < c.size() - 1; i++)
         {
-            edges(c[i], c[i + 1])++;
-            edges(c[i + 1], c[i])++;
+            edges_(c[i], c[i + 1])++;
+            edges_(c[i + 1], c[i])++;
         }
     }
-
-    // schedulability(chains, taskset, edges, f,n_cores);
-    endToEndLatency(chains, taskset, edges, f, n_cores);
-
-    tend = time(0);
-    std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
 }
 
-void WatersChallenge2015::schedulability(const std::vector<std::vector<int>> &chains, const std::vector<Task> &taskset, const Eigen::MatrixXf &edges, DataFiles &f, const int n_cores)
+bool WatersChallenge2015::SoAcomparison(DataFiles &f)
 {
     MultiRateTaskset mtaskset;
     VariableTaskSet vtaskset;
     std::vector<std::shared_ptr<MultiNode>> mtasks;
     std::vector<std::shared_ptr<MultiNode>> vtasks;
-    for (auto task : taskset)
+    for (auto task : taskset_)
     {
         auto mtask_ref = mtaskset.addTask(task.period_ * period_mult_, task.wcet_);
         mtask_ref->bcet = task.bcet_;
@@ -167,180 +188,166 @@ void WatersChallenge2015::schedulability(const std::vector<std::vector<int>> &ch
         vtasks.push_back(vtask_ref);
     }
 
-    for (int i = 0; i < edges.rows(); i++)
+    for (int i = 0; i < edges_.rows(); i++)
     {
-        for (int j = i + 1; j < edges.cols(); j++)
+        for (int j = i + 1; j < edges_.cols(); j++)
         {
-            if (edges(i, j) > 0 && mtasks[i]->period != mtasks[j]->period)
+            if (edges_(i, j) > 0 && mtasks[i]->period != mtasks[j]->period)
             {
                 mtaskset.addDataEdge(mtasks[i], mtasks[j], 0);
                 vtaskset.addDataEdge(vtasks[i], vtasks[j]);
-                // std::cout << mtasks[i]->period << " " << mtasks[j]->period << std::endl;
-                // std::cout << i << " " << j << std::endl;
             }
         }
     }
 
+    if (vtaskset.computePermutations() > 300)
+        return false;
+
+    time_t tstart, tend, tend_Forget, tend_Saidi;
+    tstart = time(0);
+
     mtaskset.createBaselineDAG();
-    std::cout << " *************************FORGET DAGS*************************" << std::endl;
-    auto dags_Forget = mtaskset.createDAGs();
-    std::cout << " *************************SAIDI DAGS*************************" << std::endl;
-    auto dags_Saidi = mtaskset.createDAGs(true);
-    std::cout << " *************************VERUCCHI DAGS*************************" << std::endl;
-    vtaskset.createBaselineTaskset();
-    auto &dags_Verucchi = vtaskset.createDAGs();
 
     Evaluation eval_other;
     std::vector<std::shared_ptr<MultiNode>> lotasks;
-    for (auto c : chains)
+    for (auto c : chains_)
     {
         lotasks.clear();
         for (auto t : c)
             lotasks.push_back(mtasks[t]);
-        eval_other.addLatency(lotasks, LatencyCost(30, 30), LatencyConstraint());
+        eval_other.addLatency(lotasks, LatencyCost(50, 1), LatencyConstraint());
     }
-    eval_other.addScheduling(SchedulingCost(10), SchedulingConstraint(n_cores));
+    eval_other.addScheduling(SchedulingCost(10), SchedulingConstraint(n_cores_));
 
-    std::cout << " *************************FORGET DAGS: " << dags_Forget.size() << "*************************" << std::endl;
+    tend = time(0);
+
+    //FORGET -----------------------------------------------------------------------------------------------
+    std::cout << " *************************FORGET *************************" << std::endl;
+    auto dags_Forget = mtaskset.createDAGs(&f);
     if (dags_Forget.size() > 0)
-    {
         eval_other.evaluate(dags_Forget, &f);
-        f.p << dags_Forget.size() << ";";
-    }
     else
     {
-        f.p << "0;";
         f.sd << "0;";
+        f.d << "0;";
+        f.p << "0;";
     }
-    f.addTest();
 
-    std::cout << " *************************SAIDI DAGS: " << dags_Saidi.size() << "*************************" << std::endl;
+    tend_Forget = time(0);
+    std::cout << "It took " << difftime(tend_Forget, tstart) << " second(s)." << std::endl;
+    f.t << difftime(tend_Forget, tstart) << ";";
+
+    //SAIDI -----------------------------------------------------------------------------------------------
+    f.addTest();
+    std::cout << " *************************SAIDI *************************" << std::endl;
+    auto dags_Saidi = mtaskset.createDAGs(&f, true);
     if (dags_Saidi.size() > 0)
-    {
         eval_other.evaluate(dags_Saidi, &f);
-        f.p << dags_Saidi.size() << ";";
-    }
     else
     {
-        f.p << "0;";
         f.sd << "0;";
+        f.d << "0;";
+        f.p << "0;";
     }
+
+    tend_Saidi = time(0);
+    std::cout << "It took " << difftime(tend, tstart) + difftime(tend_Saidi, tend_Forget) << " second(s)." << std::endl;
+    f.t << difftime(tend, tstart) + difftime(tend_Saidi, tend_Forget) << ";";
+
+    //VERUCCHI -----------------------------------------------------------------------------------------------
     f.addTest();
+    std::cout << " *************************VERUCCHI *************************" << std::endl;
+    tstart = time(0);
+
+    vtaskset.createBaselineTaskset();
+    auto &dags_Verucchi = vtaskset.createDAGs(&f);
 
     Evaluation eval;
     std::vector<std::shared_ptr<MultiNode>> ltasks;
-    // bool diff_per;
-    for (size_t i = 0; i < chains.size(); i++)
+    for (size_t i = 0; i < chains_.size(); i++)
     {
-
-        // diff_per = false;
-        // ltasks.clear();
-        // for (auto t : chains[i])
-        // {
-        //     ltasks.push_back(vtasks[t]);
-        //     if (t != chains[i][0])
-        //         diff_per = true;
-        // }
-
-        // if (diff_per)
-        // {
-        //     float minReaction = std::numeric_limits<float>::max();
-        //     float minDataAge = std::numeric_limits<float>::max();
-        //     for (size_t j = 0; j < f.r_values.size(); j++)
-        //     {
-        //         if (f.r_values[j].size() > 0 && f.r_values[j][i] < minReaction)
-        //             minReaction = f.r_values[j][i];
-        //         if (f.da_values[j].size() > 0 && f.da_values[j][i] < minDataAge)
-        //             minDataAge = f.da_values[j][i];
-        //     }
-        //     eval.addLatency(ltasks, LatencyCost(30, 30), LatencyConstraint(minDataAge - 1, minReaction - 1));
-        // }
-        // else
-        //     eval.addLatency(ltasks, LatencyCost(30, 30), LatencyConstraint());
         ltasks.clear();
-        for (auto t : chains[i])
+        for (auto t : chains_[i])
             ltasks.push_back(mtasks[t]);
-        eval.addLatency(ltasks, LatencyCost(30, 30), LatencyConstraint());
+        eval.addLatency(ltasks, LatencyCost(50, 1), LatencyConstraint());
     }
-    eval.addScheduling(SchedulingCost(10), SchedulingConstraint(n_cores));
+    eval.addScheduling(SchedulingCost(10), SchedulingConstraint(n_cores_));
 
-    std::cout << " *************************VERUCCHI DAGS: " << dags_Verucchi.size() << "*************************" << std::endl;
     if (dags_Verucchi.size() > 0)
-    {
         eval.evaluate(dags_Verucchi, &f);
-        f.p << dags_Verucchi.size() << ";";
-    }
     else
     {
-        f.p << "0;";
         f.sd << "0;";
+        f.d << "0;";
+        f.p << "0;";
     }
+    tend = time(0);
+    std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
+    f.t << difftime(tend, tstart) << ";";
 
-    f.newLine();
-    f.writeRDA(chains.size());
-}
-
-void WatersChallenge2015::endToEndLatency(const std::vector<std::vector<int>> &chains, const std::vector<Task> &taskset, const Eigen::MatrixXf &edges, DataFiles &f, const int n_cores)
-{
-
-    MultiRateTaskset mtaskset;
-    std::vector<std::shared_ptr<MultiNode>> mtasks;
-    for (auto task : taskset)
-    {
-        auto mtask_ref = mtaskset.addTask(task.period_ * period_mult_, task.wcet_);
-        mtask_ref->bcet = task.bcet_;
-        mtasks.push_back(mtask_ref);
-    }
-
-    for (int i = 0; i < edges.rows(); i++)
-    {
-        for (int j = i + 1; j < edges.cols(); j++)
-        {
-            if (edges(i, j) > 0 && mtasks[i]->period != mtasks[j]->period)
-            {
-                mtaskset.addDataEdge(mtasks[i], mtasks[j], std::max(mtasks[i]->period, mtasks[j]->period) / std::min(mtasks[i]->period, mtasks[j]->period));
-            }
-        }
-    }
-
-    mtaskset.createBaselineDAG();
-    auto dags_Verucchi = mtaskset.createDAGs();
-
-    Evaluation eval;
-    std::vector<std::shared_ptr<MultiNode>> lotasks;
-    for (auto c : chains)
-    {
-        lotasks.clear();
-        for (auto t : c)
-            lotasks.push_back(mtasks[t]);
-        eval.addLatency(lotasks, LatencyCost(30, 30), LatencyConstraint());
-    }
-    eval.addScheduling(SchedulingCost(10), SchedulingConstraint(n_cores));
-
-    std::cout << " *************************VERUCCHI *************************" << std::endl;
-
-    if (dags_Verucchi.size() > 0)
-    {
-        eval.evaluate(dags_Verucchi, &f);
-        f.p << dags_Verucchi.size() << ";";
-    }
-
-    std::cout << " *************************BECKER *************************" << std::endl;
-
+    //BECKER-- ---------------------------------------------------------------------------------------------
     f.addTest();
+    std::cout << " *************************BECKER *************************" << std::endl;
+    tstart = time(0);
     if (dags_Verucchi.size() > 0)
     {
-        Becker b(mtaskset, mtasks);
-        float m_latency;
-        for (auto c : chains)
+        float m_latency, deadline, min_max_latency, new_lat, deadline_up, deadline_down;
+        int chain_i = 0;
+        for (auto c : chains_)
         {
-            m_latency = b.synthesizeDependencies(c, 11);
-            std::cout << "res:" << m_latency << std::endl;
-            f.addDA(m_latency);
+            for (auto tc : c)
+                std::cout << " ->" << tc;
+            std::cout << std::endl;
+            Becker b(mtasks);
+            m_latency = b.computeChainMinMaxLatency(c);
+
+            deadline = m_latency;
+            min_max_latency = deadline;
+            new_lat = deadline;
+
+            deadline_up = deadline;
+            deadline_down = 0;
+
+            deadline = std::ceil(deadline / 2.0);
+
+            while (deadline_up - deadline_down > 1)
+            {
+                Becker b(mtasks);
+                new_lat = b.synthesizeDependencies(c, deadline);
+                if (new_lat > 0)
+                {
+                    min_max_latency = new_lat;
+                    deadline_up = deadline;
+                }
+                else
+                {
+                    deadline_down = deadline;
+                }
+                deadline = deadline_down + std::ceil((deadline_up - deadline_down) / 2.0);
+                std::cout << "deadline:" << m_latency << "up:" << deadline_up << "down:" << deadline_down << std::endl;
+            }
+
+            // new_lat = b.synthesizeDependencies(c, deadline_up, true);
+            std::cout << "max latency:" << m_latency << std::endl;
+
+            if (f.da_values[f.val_index - 1].size() > 0 && f.da_values[f.val_index - 1][chain_i] > min_max_latency && min_max_latency > 0)
+            {
+                min_max_latency = f.da_values[f.val_index - 1][chain_i];
+            }
+
+            std::cout << "min max latency:" << min_max_latency << std::endl;
+
+            f.addDA(min_max_latency);
+            chain_i++;
         }
     }
+    tend = time(0);
+    std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
+    f.t << difftime(tend, tstart) << ";";
+
     f.newLine();
-    f.writeRDA(chains.size());
+    f.writeRDA(chains_.size());
+    return true;
 }
 
 std::vector<std::vector<int>> WatersChallenge2015::generateChains(std::vector<Task> taskset, int n_chains)
@@ -535,4 +542,11 @@ Task WatersChallenge2015::generateTask(float util)
 
     t.print();
     return t;
+}
+
+WatersChallenge2015::~WatersChallenge2015()
+{
+    delete p_distribution_;
+    delete spic_distribution_;
+    delete dpic_distribution_;
 }

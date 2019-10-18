@@ -71,6 +71,11 @@ Evaluation::evaluate(const std::vector<DAG> &dags, DataFiles *f)
 	for (const auto &eval : latencyEval_)
 	{
 		printChain(eval.first);
+		// for (const auto &d : dags)
+		// {
+		// 	auto latInfo = d.getLatencyInfoNoCutoff(eval.first);
+		// 	std::cout << latInfo << std::endl;
+		// }
 
 		auto latInfo = dags[bestDAG].getLatencyInfoNoCutoff(eval.first);
 		std::cout << latInfo << std::endl;

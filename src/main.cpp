@@ -320,14 +320,33 @@ int multiTasksetPareto()
 	return 0;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 
 	// return taskset2();
-	DataFiles f("reactions.csv", "data_age.csv", "permutations.csv", "schedulable_dags.csv");
 
-	for(int i=0; i<1; i++)
+	// int i = atoi(argv[1]);
+	// std::cout << atoi(argv[1]) << std::endl;
+
+	int start = 0;
+	int end = 1000;
+
+	if (argc > 1)
+		start = atoi(argv[1]);
+	if (argc > 2)
+		end = atoi(argv[2]);
+
+
+	// #pragma omp parallel for
+	for (int i = start; i < end; i++)
 	{
-		WatersChallenge2015 test(5, 10, 1.5, WatersChallenge2015::TEST, f, 4);
+		DataFiles f("res/reactions" + std::to_string(i) + ".csv", "res/data_age" + std::to_string(i) + ".csv", "res/schedulable_dags" + std::to_string(i) + ".csv", "res/times" + std::to_string(i) + ".csv", "res/deletions" + std::to_string(i) + ".csv", "res/permutations" + std::to_string(i) + ".csv");
+		WatersChallenge2015 test(10, 15, 1.5, WatersChallenge2015::N_AND_U, f, 4);
+		if (!test.SoAcomparison(f))
+		{
+			i--;
+			continue;
+		}
 	}
+	return EXIT_SUCCESS;
 }

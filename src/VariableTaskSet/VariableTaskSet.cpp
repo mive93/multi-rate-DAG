@@ -44,6 +44,31 @@ VariableTaskSet::createBaselineTaskset()
 	return baselineTaskset_;
 }
 
+int VariableTaskSet::computePermutations()
+{
+	std::vector<std::vector<MultiEdge>> edgeSets;
+
+	std::vector<int> permutSets;
+	for (auto &edge : edges_)
+	{
+		edgeSets.push_back(edge.translateToMultiEdges());
+		permutSets.push_back(edgeSets.back().size());
+	}
+	permutSets.push_back(1);
+
+	std::vector<int> permutation(edgeSets.size(), 0);
+	int numPermutations = 1;
+	for (const auto &it : edgeSets)
+		numPermutations *= it.size();
+
+	for (int k = permutSets.size() - 2; k >= 0; k--)
+	{
+		permutSets[k] = permutSets[k + 1] * permutSets[k];
+	}
+	std::cout << numPermutations << " Permutations available" << std::endl;
+	return numPermutations;
+}
+
 const std::vector<MultiRateTaskset> &
 VariableTaskSet::createTasksets()
 {
@@ -93,7 +118,7 @@ VariableTaskSet::createTasksets()
 }
 
 const std::vector<DAG> &
-VariableTaskSet::createDAGs()
+VariableTaskSet::createDAGs(DataFiles *f)
 {
 	allDAGs_.clear();
 	if (tasksets_.empty())
@@ -103,7 +128,7 @@ VariableTaskSet::createDAGs()
 	for (auto &set : tasksets_)
 	{
 
-		auto dags = set.createDAGs();
+		auto dags = set.createDAGs(f);
 
 		std::cout << std::endl
 				  << "Taskset " << k++ << "/" << tasksets_.size() << ": " << dags.size() << " created" << std::endl;
@@ -158,4 +183,34 @@ VariableTaskSet::addDataEdge(std::shared_ptr<MultiNode> from, std::shared_ptr<Mu
 	for (unsigned k = jitterMin; k <= std::min(std::max(from->period, to->period) / std::min(from->period, to->period), maxJitter); k++)
 		jitters.push_back(k);
 	return addDataEdge(from, to, jitters);
+}
+
+VariableTaskSet::~VariableTaskSet()
+{
+
+	// std::cout<<"Distruggo variable taskset---------------------------------------------------------"<<std::endl;
+	// for (auto &d : allDAGs_)
+	// 	d.freeMem();
+	// allDAGs_.clear();
+	// for (auto &t : tasksets_)
+	// 	t.freeMem();
+	// tasksets_.clear();
+
+	// for (auto &e : edges_)
+	// {
+	// 	for (auto &n : e.from->nodes)
+	// 		n.reset();
+	// 	e.from->nodes.clear();
+	// 	e.from.reset();
+
+	// 	for (auto &n : e.to->nodes)
+	// 		n.reset();
+	// 	e.to->nodes.clear();
+	// 	e.to.reset();
+
+	// 	e.jitter.clear();
+	// }
+	// edges_.clear();
+	// baselineTaskset_.freeMem();
+	// std::cout<<"Distrutto---------------------------------------------------------"<<std::endl;
 }

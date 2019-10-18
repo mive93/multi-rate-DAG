@@ -20,9 +20,10 @@ struct Edge
 	void
 	flipEdge();
 
+	void freeMem();
+
 	std::shared_ptr<Node> from;
 	std::shared_ptr<Node> to;
-
 };
 
 #endif /* DAG_EDGE_H_ */

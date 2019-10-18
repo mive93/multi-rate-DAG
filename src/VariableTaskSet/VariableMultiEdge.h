@@ -10,7 +10,6 @@
 #include <MultiRate/MultiEdge.h>
 #include <MultiRate/MultiNode.h>
 
-
 struct VariableMultiEdge
 {
 
@@ -21,7 +20,7 @@ struct VariableMultiEdge
 	std::vector<MultiEdge>
 	translateToMultiEdges();
 
+	void freeMem();
 };
-
 
 #endif /* VARIABLETASKSET_VARIABLEMULTIEDGE_H_ */

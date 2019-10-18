@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.8)
 project (dags)
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -std=c++17 -fPIC -Wall -Wno-int-in-bool-context")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -std=c++17 -fPIC -Wall -O3 -Wno-int-in-bool-context")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall -O3")
 
 

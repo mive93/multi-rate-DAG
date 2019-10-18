@@ -24,6 +24,8 @@ struct MultiEdge
 	std::vector<std::vector<Edge> >
 	translateToEdgesSaidi();
 
+	void freeMem();
+
 	std::shared_ptr<MultiNode> from;
 	std::shared_ptr<MultiNode> to;
 	Dependency dependency;

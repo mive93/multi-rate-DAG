@@ -24,7 +24,6 @@ class MultiRateTaskset;
 class DAG
 {
 public:
-
 	struct NodeInfo
 	{
 		Eigen::VectorXf bc; //Best case execution time
@@ -36,7 +35,7 @@ public:
 		Eigen::VectorXf lft; //Latest Finishing Time
 
 		friend std::ostream &
-		operator <<(std::ostream &out, const NodeInfo &c);
+		operator<<(std::ostream &out, const NodeInfo &c);
 	};
 
 	using DAGMatrix = Eigen::Matrix<int, -1, -1>;
@@ -46,7 +45,7 @@ public:
 
 	DAG(unsigned period);
 
-	DAG(const DAG& other);
+	DAG(const DAG &other);
 
 	void
 	setPeriod(unsigned period);
@@ -58,10 +57,10 @@ public:
 	transitiveReduction();
 
 	void
-	addNodes(const std::vector<std::shared_ptr<Node>>& nodes);
+	addNodes(const std::vector<std::shared_ptr<Node>> &nodes);
 
 	void
-	addEdges(const std::vector<Edge>& edges);
+	addEdges(const std::vector<Edge> &edges);
 
 	unsigned
 	getNumNodes() const;
@@ -69,10 +68,10 @@ public:
 	unsigned
 	getNumEdges() const;
 
-	const std::vector<std::shared_ptr<Node>>&
+	const std::vector<std::shared_ptr<Node>> &
 	getNodes() const;
 
-	const std::vector<Edge>&
+	const std::vector<Edge> &
 	getEdges() const;
 
 	void
@@ -84,23 +83,23 @@ public:
 	void
 	toTikz(std::string filename) const;
 
-	const std::shared_ptr<Node>&
+	const std::shared_ptr<Node> &
 	getEnd() const;
 
-	const std::shared_ptr<Node>&
+	const std::shared_ptr<Node> &
 	getStart() const;
 
 	DAGMatrix
 	toDAGMatrix() const;
 
 	void
-	fromDAGMatrix(const DAGMatrix& mat);
+	fromDAGMatrix(const DAGMatrix &mat);
 
 	DAGMatrix
 	getJitterMatrix() const;
 
 	bool
-	hasEdge(const Edge& e) const;
+	hasEdge(const Edge &e) const;
 
 	bool
 	checkLongestChain() const;
@@ -108,13 +107,13 @@ public:
 	Eigen::MatrixXi
 	getGroupMatrix(int N) const;
 
-	const DAGMatrix&
+	const DAGMatrix &
 	getAncestors() const
 	{
 		return ancestors_;
 	}
 
-	const DAGMatrix&
+	const DAGMatrix &
 	getDAGMatrix() const
 	{
 		return dagMatrix_;
@@ -132,84 +131,86 @@ public:
 	void
 	createNodeInfo();
 
-	const NodeInfo&
+	const NodeInfo &
 	getNodeInfo() const
 	{
 		return nodeInfo_;
 	}
 
-	const DAGMatrix&
+	const DAGMatrix &
 	getDefinitelySerialized() const
 	{
 		return definitelySerialized_;
 	}
 
 	LatencyInfo
-	getLatencyInfo(const std::vector<unsigned>& dataChain) const;
+	getLatencyInfo(const std::vector<unsigned> &dataChain) const;
 
 	LatencyInfo
-	getLatencyInfoNoCutoff(const std::vector<unsigned>& dataChain) const;
+	getLatencyInfoNoCutoff(const std::vector<unsigned> &dataChain) const;
 
 	LatencyInfo
-	getMinLatency(const std::vector<unsigned>& dataChain, LatencyInfo& latency) const;
+	getMinLatency(const std::vector<unsigned> &dataChain, LatencyInfo &latency) const;
 
-	MultiRateTaskset*
+	MultiRateTaskset *
 	getOriginatingTaskset() const
 	{
 		return originatingTaskset_;
 	}
 
 	void
-	setOriginatingTaskset(MultiRateTaskset* originatingTaskset)
+	setOriginatingTaskset(MultiRateTaskset *originatingTaskset)
 	{
 		originatingTaskset_ = originatingTaskset;
 	}
 
-	const DAGMatrixFloat&
+	const DAGMatrixFloat &
 	getPartiallySerializedReact() const
 	{
 		return partiallySerializedReact_;
 	}
 
-	const DAGMatrixFloat&
+	const DAGMatrixFloat &
 	getPartiallySerialized() const
 	{
 		return partiallySerialized_;
 	}
 
-	const DAGMatrixFloat&
+	const DAGMatrixFloat &
 	getPartiallySerializedReactBInit() const
 	{
 		return partiallySerializedReactBInit_;
 	}
 
-	const std::shared_ptr<DummyNodes>&
+	const std::shared_ptr<DummyNodes> &
 	getDummyNodes() const
 	{
 		return dummyNodes_;
 	}
 
 	void
-	setDummyNodes(const std::shared_ptr<DummyNodes>& dummyNodes)
+	setDummyNodes(const std::shared_ptr<DummyNodes> &dummyNodes)
 	{
 		dummyNodes_ = dummyNodes;
 	}
 
 	std::vector<float>
 	getSyncTimes() const;
-private:
 
+	void freeMem();
+
+private:
 	void
 	createStartEnd();
 
 	void
-	convertToBooleanMat(DAGMatrix& mat) const;
+	convertToBooleanMat(DAGMatrix &mat) const;
 
 	void
-	convertToBooleanVec(Eigen::VectorXi& vec) const;
+	convertToBooleanVec(Eigen::VectorXi &vec) const;
 
 	std::vector<unsigned>
-	getIdsFromGroup(const DAGMatrix& groupMat, unsigned group) const;
+	getIdsFromGroup(const DAGMatrix &groupMat, unsigned group) const;
 
 	DAGMatrix dagMatrix_;
 	DAGMatrix ancestors_;
@@ -230,8 +231,7 @@ private:
 
 	unsigned period_;
 
-	MultiRateTaskset* originatingTaskset_;
-
+	MultiRateTaskset *originatingTaskset_;
 };
 
 #endif /* DAG_H_ */

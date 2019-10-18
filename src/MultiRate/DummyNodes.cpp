@@ -10,8 +10,7 @@
 #include <iostream>
 #include <map>
 
-void
-DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
+void DummyNodes::addToDAG(DAG &dag, unsigned hyperperiod)
 {
 	auto dagNodes = dag.getNodes();
 
@@ -52,7 +51,7 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 	}
 
 	auto dummy = std::make_shared<Node>(0, syncNodes.front()->offset, syncNodes.front()->offset,
-			syncNodes.front()->offset, 667);
+										syncNodes.front()->offset, 667);
 	dummy->name = "dummy0-" + std::to_string(static_cast<int>(syncNodes.front()->offset));
 	dummy->shortName = "0-" + std::to_string(static_cast<int>(syncNodes.front()->offset));
 	dummyTasks.push_back(dummy);
@@ -82,7 +81,6 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 	dummyChain.push_back(Edge(syncNodes.back(), dummy));
 	dummyChain.push_back(Edge(dummy, dag.getEnd()));
 
-
 	dag.addNodes(syncNodes);
 	dag.addNodes(dummyTasks);
 	dag.addEdges(dummyChain);
@@ -92,13 +90,11 @@ DummyNodes::addToDAG(DAG& dag, unsigned hyperperiod)
 	std::cout << "Adding " << syncNodes.size() << " Sync nodes" << std::endl;
 	std::cout << "Adding " << dummyTasks.size() << " Dummy tasks" << std::endl;
 	std::cout << "Adding " << syncEdges.size() << " sync edges" << std::endl;
-
 }
 
-bool
-DummyNodes::brokenDummyChain(const DAG& dag)
+bool DummyNodes::brokenDummyChain(const DAG &dag)
 {
-	for (const auto& edge : dummyChain)
+	for (const auto &edge : dummyChain)
 		if (!dag.hasEdge(edge))
 			return true;
 	return false;
@@ -113,4 +109,19 @@ DummyNodes::getSyncTimes() const
 		syncTimes[k] = syncNodes[k]->offset;
 	}
 	return syncTimes;
+}
+
+void DummyNodes::freeMem()
+{
+	for (auto &e : dummyChain)
+		e.freeMem();
+	dummyChain.clear();
+
+	for (auto &d : dummyTasks)
+		d.reset();
+	dummyTasks.clear();
+
+	for (auto &s : syncNodes)
+		s.reset();
+	syncNodes.clear();
 }

@@ -1,12 +1,14 @@
 #include "DataFiles.h"
 
-DataFiles::DataFiles(const std::string &reactions, const std::string &data_age, const std::string &permutations, const std::string &schedulable_dags)
+DataFiles::DataFiles(const std::string &reactions, const std::string &data_age, const std::string &schedulable_dags, const std::string &times, const std::string &deletions, const std::string &permutations)
 {
     r.open(reactions);
     da.open(data_age);
-    p.open(permutations);
     sd.open(schedulable_dags);
-    r_values.resize(4); //4 tests allowed
+    d.open(deletions);
+    t.open(times);
+    p.open(permutations);
+    r_values.resize(4);  //4 tests allowed
     da_values.resize(4); //4 tests allowed
 }
 
@@ -14,13 +16,17 @@ DataFiles::~DataFiles()
 {
     r.close();
     da.close();
-    p.close();
     sd.close();
+    d.close();
+    p.close();
+    t.close();
 }
 void DataFiles::newLine()
 {
-    p << "\n";
     sd << "\n";
+    d << "\n";
+    t << "\n";
+    p << "\n";
 }
 
 void DataFiles::addTest()
@@ -40,23 +46,32 @@ void DataFiles::addDA(const float da_val)
 void DataFiles::writeRDA(const int n_chains)
 {
 
-    for (int j = 0; j < n_chains; j++)
+    bool write = false;
+    for (auto c : da_values)
+        for (auto da : c)
+            if (da > 0)
+                write = true;
+
+    if (write)
     {
-        for (int i = 0; i <= val_index; i++)
+        for (int j = 0; j < n_chains; j++)
         {
+            for (int i = 0; i <= val_index; i++)
+            {
 
-            if (j < r_values[i].size())
-                r << r_values[i][j] << ";";
-            else
-                r << "0;";
+                if (j < r_values[i].size())
+                    r << r_values[i][j] << ";";
+                else
+                    r << "0;";
 
-            if (j < da_values[i].size())
-                da << da_values[i][j] << ";";
-            else
-                da << "0;";
+                if (j < da_values[i].size())
+                    da << da_values[i][j] << ";";
+                else
+                    da << "0;";
+            }
+            da << "\n";
+            r << "\n";
         }
-        da << "\n";
-        r << "\n";
     }
 
     for (size_t i = 0; i < r_values.size(); i++)

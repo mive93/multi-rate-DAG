@@ -11,15 +11,19 @@ Edge::Edge()
 {
 }
 
-Edge::Edge(std::shared_ptr<Node> f, std::shared_ptr<Node> t):
-		from(f), to(t)
+Edge::Edge(std::shared_ptr<Node> f, std::shared_ptr<Node> t) : from(f), to(t)
 {
 }
 
-void
-Edge::flipEdge()
+void Edge::flipEdge()
 {
 	auto temp = from;
 	from = to;
 	to = temp;
+}
+
+void Edge::freeMem()
+{
+	from.reset();
+	to.reset();
 }

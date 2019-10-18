@@ -21,29 +21,50 @@ struct DPTNode
     int j_;
     std::vector<DPTNode> children;
     DPTNode(int i, int j) : i_(i), j_(j) {}
+    DPTNode() : i_(-1), j_(-1) {}
 };
 
 //Data Propagation Tree
 struct DPT
 {
 public:
-    DPTNode *root = nullptr;
-    DPTNode *cur_node = nullptr;
-    
+    DPTNode root;
 
-    void createRoot(int i, int j)
+    DPT() {}
+    DPT(int i, int j)
     {
-        root = new DPTNode(i, j);
-        cur_node = root;
+        root.i_ = i;
+        root.j_ = j;
     }
 
-    void printTree(DPTNode node)
+    void deallocate(DPTNode &node)
     {
-        std::cout << "node: " << node.i_ << " " << node.j_ << std::endl;
         if (node.children.size() > 0)
         {
             for (size_t c = 0; c < node.children.size(); c++)
-                printTree(node.children[c]);
+                deallocate(node.children[c]);
+            node.children.clear();
+        }
+    }
+
+    ~DPT()
+    {
+        deallocate(root);
+    }
+
+    void printTree(DPTNode node, const std::vector<std::vector<float>> &Rmax, const std::vector<std::vector<float>> &Rmin, const std::vector<std::shared_ptr<MultiNode>> &mtasks)
+    {
+        std::cout << "node: " << node.i_ << " " << node.j_;
+        if (node.children.size() > 0)
+        {
+            std::cout << std::endl;
+            for (size_t c = 0; c < node.children.size(); c++)
+                printTree(node.children[c], Rmax, Rmin, mtasks);
+        }
+        else
+        {
+            float latency = (Rmax[node.i_][node.j_] + mtasks[node.i_]->wcet) - Rmin[root.i_][root.j_];
+            std::cout << "----lat: " << latency << std::endl;
         }
     }
 
@@ -90,7 +111,7 @@ public:
             findSibling(node.children[i], k, l, z, w);
         }
     }
-
+    
 
     void findFirstInvalid(DPTNode node, std::vector<std::vector<float>> Rmax, std::vector<std::vector<float>> Rmin, std::vector<std::shared_ptr<MultiNode>> mtasks, const float deadline, int &k, int &l)
     {
@@ -101,8 +122,8 @@ public:
         }
         else
         {
-            float latency = (Rmax[node.i_][node.j_] + mtasks[node.i_]->wcet) - Rmin[root->i_][root->j_];
-            if (latency > deadline && k == -1 && l == -1)
+            float latency = (Rmax[node.i_][node.j_] + mtasks[node.i_]->wcet) - Rmin[root.i_][root.j_];
+            if (latency >= deadline && k == -1 && l == -1)
             {
                 k = node.i_;
                 l = node.j_;
@@ -110,27 +131,27 @@ public:
         }
     }
 
-    void DFSMaxLatency(DPTNode node, std::vector<std::vector<float>> Rmax, std::vector<std::vector<float>> Rmin, std::vector<std::shared_ptr<MultiNode>> mtasks, float &max_latency)
+    void DFSMaxLatency(DPTNode node, std::vector<std::vector<float>> Rmax, std::vector<std::vector<float>> Rmin, std::vector<std::shared_ptr<MultiNode>> mtasks, float &max_latency, const int last_task)
     {
 
         if (node.children.size() > 0)
         {
             for (size_t i = 0; i < node.children.size(); i++)
-                DFSMaxLatency(node.children[i], Rmax, Rmin, mtasks, max_latency);
+                DFSMaxLatency(node.children[i], Rmax, Rmin, mtasks, max_latency, last_task);
         }
         else
         {
-            float latency = (Rmax[node.i_][node.j_] + mtasks[node.i_]->wcet) - Rmin[root->i_][root->j_];
-            if (latency > max_latency)
+            float latency = (Rmax[node.i_][node.j_] + mtasks[node.i_]->wcet) - Rmin[root.i_][root.j_];
+            if (latency > max_latency && node.i_ == last_task)
                 max_latency = latency;
-            std::cout << "latency: " << latency << std::endl;
+            // std::cout << "latency: " << latency << std::endl;
         }
     }
 
-    float calcMaxLatency(std::vector<std::vector<float>> Rmax, std::vector<std::vector<float>> Rmin, std::vector<std::shared_ptr<MultiNode>> mtasks)
+    float calcMaxLatency(std::vector<std::vector<float>> Rmax, std::vector<std::vector<float>> Rmin, std::vector<std::shared_ptr<MultiNode>> mtasks, const int last_task)
     {
         float max_latency = 0;
-        DFSMaxLatency(*root, Rmax, Rmin, mtasks, max_latency);
+        DFSMaxLatency(root, Rmax, Rmin, mtasks, max_latency, last_task);
         return max_latency;
     }
 };
@@ -139,11 +160,15 @@ struct allDPT
 {
     std::vector<DPT> trees;
 
-    void printTrees()
+    ~allDPT()
+    {
+    }
+
+    void printTrees(const std::vector<std::vector<float>> &Rmax, const std::vector<std::vector<float>> &Rmin, const std::vector<std::shared_ptr<MultiNode>> &mtasks)
     {
         for (auto tree : trees)
         {
-            tree.printTree(*tree.root);
+            tree.printTree(tree.root, Rmax, Rmin, mtasks);
             std::cout << "################################" << std::endl;
         }
     }
@@ -152,7 +177,7 @@ struct allDPT
     {
         for (auto tree : trees)
         {
-            tree.findDad(*tree.root, k, l, z, w);
+            tree.findDad(tree.root, k, l, z, w);
             if (z != -1 && w != -1)
                 break;
         }
@@ -161,13 +186,13 @@ struct allDPT
     int findFirstSibiling(int k, int l, int &z, int &w, int i_tree)
     {
         int i_dad = -1, j_dad = -1;
-        trees[i_tree].findDad(*trees[i_tree].root, k, l, i_dad, j_dad);
+        trees[i_tree].findDad(trees[i_tree].root, k, l, i_dad, j_dad);
         // std::cout << "dad : " << i_dad << " " << j_dad << std::endl;
         int t_index;
         if (i_dad != -1 && j_dad != -1)
             for (t_index = 0; t_index < trees.size(); t_index++)
             {
-                trees[t_index].findSibling(*trees[t_index].root, i_dad, j_dad, z, w);
+                trees[t_index].findSibling(trees[t_index].root, i_dad, j_dad, z, w);
                 // std::cout << "dad sibling : " << z << " " << w << std::endl;
                 if (z != -1 && w != -1)
                     break;

@@ -9,7 +9,7 @@
 
 #include <iostream>
 
-std::vector<std::vector<Edge> >
+std::vector<std::vector<Edge>>
 MultiEdge::translateToEdges()
 {
 	auto fromNodes = from->nodes;
@@ -81,30 +81,26 @@ MultiEdge::translateToEdges()
 			{
 				edgeSet.push_back(Edge(toNodes[k], fromNodes[to]));
 			}
-
 		}
 		edgeSets.push_back(edgeSet);
 	}
 
 	return edgeSets;
-
 }
 
-
-
-std::vector<std::vector<Edge> >
+std::vector<std::vector<Edge>>
 MultiEdge::translateToEdgesSaidi()
 {
 
-	std::cout<<"Saidi edges"<<std::endl;
+	std::cout << "Saidi edges" << std::endl;
 	auto fromNodes = from->nodes;
 	auto toNodes = to->nodes;
 
 	int numFrom = fromNodes.size();
 	int numTo = toNodes.size();
 
-	std::cout<<"from: "<<numFrom<<std::endl;
-	std::cout<<"to: "<<numTo<<std::endl;
+	std::cout << "from: " << numFrom << std::endl;
+	std::cout << "to: " << numTo << std::endl;
 
 	std::vector<std::vector<Edge>> edgeSets;
 
@@ -138,15 +134,22 @@ MultiEdge::translateToEdgesSaidi()
 
 	//Data dependency
 	std::vector<Edge> edgeSet;
-	if(numFrom < numTo)
-		for(int i=0; i<numFrom; i++)
-			edgeSet.push_back(Edge(fromNodes[i], toNodes[numTo/numFrom*(i+1)-1]));
+	if (numFrom < numTo)
+		for (int i = 0; i < numFrom; i++)
+			edgeSet.push_back(Edge(fromNodes[i], toNodes[numTo / numFrom * (i + 1) - 1]));
 	else
-		for(int i=0; i<numTo; i++)
-			edgeSet.push_back(Edge(fromNodes[numFrom/numTo*(i+1)-1], toNodes[i]));
-	
+		for (int i = 0; i < numTo; i++)
+			edgeSet.push_back(Edge(fromNodes[numFrom / numTo * (i + 1) - 1], toNodes[i]));
+
 	edgeSets.push_back(edgeSet);
 
 	return edgeSets;
+}
 
+void MultiEdge::freeMem()
+{
+	from->freeMem();
+	from.reset();
+	to->freeMem();
+	to.reset();
 }

@@ -12,6 +12,7 @@
 #include "Evaluation/Evaluation.h"
 #include "Benchmark/DataFiles.h"
 #include "Becker.h"
+#include <ctime>
 
 #define N_PERIODS 9
 
@@ -33,7 +34,7 @@ class WatersChallenge2015
 {
 private:
     const std::vector<int> periods_ = {1, 2, 5, 10, 20, 50, 100, 200, 1000}; //in ms
-    const std::vector<int> p_shares_ = {0, 0, 2, 25, 25, 3, 20, 1, 0};
+    const std::vector<int> p_shares_ = {0, 0, 0, 25, 25, 3, 20, 1, 0};
     // const std::vector<int> p_shares_ = {3, 2, 2, 25, 25, 3, 20, 1, 4};
     const std::vector<float> acet_ = {5.00, 4.20, 11.04, 10.09, 8.74, 17.56, 10.53, 2.56, 0.43}; //in us
     const std::vector<float> fmin_best_ = {0.19, 0.12, 0.17, 0.05, 0.11, 0.32, 0.09, 0.45, 0.68};
@@ -61,6 +62,11 @@ private:
     std::vector<std::discrete_distribution<int>> comunication_distribution_;
     int period_mult_ = 1000;
 
+    std::vector<std::vector<int>> chains_;
+    std::vector<Task> taskset_;
+    Eigen::MatrixXf edges_;
+    int n_cores_;
+
     std::vector<std::pair<int, int>> genIndexPerPeriods(std::vector<Task> &taskset);
     int getRandomTaskIndexGivenPeriodIndex(std::vector<std::pair<int, int>> ipp, int p_index);
 
@@ -70,17 +76,18 @@ public:
         ONLY_N,
         ONLY_U,
         N_AND_U,
-        TEST
+        TEST_1,
+        TEST_2
     } task_gen_t;
 
     WatersChallenge2015(const int n_tasks, const int n_chains, const float utilization, task_gen_t generation, DataFiles &f, const int n_cores);
-    void schedulability(const std::vector<std::vector<int>> &chains, const std::vector<Task> &taskset, const Eigen::MatrixXf &edges, DataFiles &f, const int n_cores);
-    void endToEndLatency(const std::vector<std::vector<int>> &chains, const std::vector<Task> &taskset, const Eigen::MatrixXf &edges, DataFiles &f, const int n_cores);
+    bool SoAcomparison(DataFiles &f);
     std::vector<std::vector<int>> generateChains(std::vector<Task> taskset, int n_chains);
     std::vector<Task> generateTasksetGivenU(float utilization);
     std::vector<Task> generateTasksetGivenN(int max_n);
     std::vector<Task> generateTasksetUUnifast(int max_n, float utilization);
     Task generateTask(float util = -1);
+    ~WatersChallenge2015();
 };
 
 bool compareTasksPeriod(const Task &t1, const Task &t2);

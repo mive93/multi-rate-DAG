@@ -13,9 +13,8 @@ void Becker::printIntervals()
     }
 }
 
-Becker::Becker(const MultiRateTaskset &t, std::vector<std::shared_ptr<MultiNode>> mtasks)
+Becker::Becker(std::vector<std::shared_ptr<MultiNode>> mtasks)
 {
-    t_ = t;
     n_tasks_ = mtasks.size();
     mtasks_ = mtasks;
 
@@ -27,9 +26,6 @@ Becker::Becker(const MultiRateTaskset &t, std::vector<std::shared_ptr<MultiNode>
     Dmin.resize(mtasks_.size());
     Dmin_local.resize(mtasks_.size());
     Dmax.resize(mtasks_.size());
-
-    hyperperiod_ = t_.getHyperPeriod();
-    // std::cout << hyperperiod_ << std::endl;
 }
 
 void Becker::computeIntervals(int hyperperiod_count)
@@ -82,9 +78,10 @@ void Becker::buildPropTree(const std::vector<int> &chain, std::pair<int, int> &s
 
             if (follows(i, j, k, z))
             {
-                // std::cout << k << " " << z << " +++++++" << std::endl;
 
-                tree.insertChild(i, j, k, z, *tree.root);
+                // std::cout << Rmax[k][z] << ">= " << Dmin_local[i][j] << " and" << Rmin[k][z] << "< " << Dmax[i][j] << std::endl;
+
+                tree.insertChild(i, j, k, z, tree.root);
                 //update Dmin
                 Dmin_local[k][z] = std::max(Dmin[i][j] + mtasks_[k]->wcet, Dmin[k][z]);
                 buildPropTree(chain, succ_root, leaves, k, z, i_chain, tree);
@@ -100,11 +97,22 @@ void Becker::buildPropTree(const std::vector<int> &chain, std::pair<int, int> &s
     }
 }
 
-bool Becker::synthesizeDependencies(const std::vector<int> &chain, float deadline)
+float Becker::synthesizeDependencies(const std::vector<int> &chain, float deadline, bool verbose)
 {
+
     float max_latency = 0;
     if (chain.size() > 0)
     {
+
+        // std::cout << "hyperperiod " << hyperperiod_ << std::endl;
+        hyperperiod_ = mtasks_[chain[0]]->period;
+        for (int i = 1; i < chain.size(); i++)
+            hyperperiod_ = std::lcm(hyperperiod_, mtasks_[chain[i]]->period);
+        // for (int i = 1; i < mtasks_.size(); i++)
+        //     hyperperiod_ = std::lcm(hyperperiod_, mtasks_[i]->period);
+
+        // std::cout << "hyperperiod " << hyperperiod_ << std::endl;
+
         // for (auto c : chain)
         //     std::cout << c << "\t";
         // std::cout << std::endl;
@@ -117,81 +125,105 @@ bool Becker::synthesizeDependencies(const std::vector<int> &chain, float deadlin
         // std::cout << "hc:" << hyperperiod_count << std::endl;
 
         computeIntervals(hyperperiod_count);
-        printIntervals();
+        // printIntervals();
 
         float cur_max_latency;
         int i = chain[0];
         bool dep = true;
         float max_lat_thresh = WCL;
-        while (max_lat_thresh >= deadline && dep)
+        int first_invalid_k = -1;
+        int first_invalid_l = -1;
+        while (max_lat_thresh > deadline && dep)
         {
             allDPT at;
-            std::cout << "build trees" << std::endl;
-            printIntervals();
+            if (verbose)
+            {
+                std::cout << "build trees" << std::endl;
+                printIntervals();
+            }
             max_latency = 0;
             for (int j = 0; j < Dmax[i].size(); j++)
             {
                 std::vector<std::pair<int, int>> leaves;
                 std::pair<int, int> succ_root;
-                DPT tree;
-                tree.createRoot(i, j);
+                DPT tree(i, j);
                 initilizeDminLoc();
                 buildPropTree(chain, succ_root, leaves, i, j, 0, tree);
                 at.trees.push_back(tree);
-                cur_max_latency = tree.calcMaxLatency(Rmax, Rmin, mtasks_);
+                cur_max_latency = tree.calcMaxLatency(Rmax, Rmin, mtasks_, chain[chain.size() - 1]);
                 if (cur_max_latency > max_latency)
                     max_latency = cur_max_latency;
             }
-            at.printTrees();
             max_lat_thresh = max_latency;
+            if (verbose)
+                at.printTrees(Rmax, Rmin, mtasks_);
 
             if (max_latency > deadline)
             {
-
-                std::cout << "deadline:" << deadline << " cur_max_lat: " << cur_max_latency << std::endl;
+                if (verbose)
+                    std::cout << "deadline:" << deadline << " cur_max_lat: " << cur_max_latency << std::endl;
                 int k = -1, l = -1, z = -1, w = -1;
-                for (int j = 0; j < Dmax[i].size(); j++)
+
+                if (first_invalid_k == -1 && first_invalid_l == -1 && k == -1 && l == -1)
                 {
-                    at.trees[j].findFirstInvalid(*at.trees[j].root, Rmax, Rmin, mtasks_, deadline, k, l);
-                    if (k != -1 && l != -1)
-                        break;
+                    for (int j = 0; j < Dmax[i].size(); j++)
+                    {
+                        at.trees[j].findFirstInvalid(at.trees[j].root, Rmax, Rmin, mtasks_, deadline, k, l);
+                        if (k != -1 && l != -1)
+                        {
+                            first_invalid_k = k;
+                            first_invalid_l = l;
+                            break;
+                        }
+                    }
                 }
-                std::cout << "first invalid: " << k << " " << l << std::endl;
+                else
+                {
+                    k = first_invalid_k;
+                    l = first_invalid_l;
+                }
+
+                if (verbose)
+                    std::cout << "First invalid: " << k << " " << l << std::endl;
 
                 bool res = false;
                 while (!res)
                 {
                     if (k != -1 && l != -1)
                     {
-                        std::cout << "node  : " << k << " " << l << std::endl;
+                        // std::cout << "node  : " << k << " " << l << std::endl;
                         // at.printTrees();
                         at.findDad(k, l, z, w);
                         if (z != -1 && w != -1)
                         {
-                            std::cout << "dad  : " << z << " " << w << std::endl;
+                            // std::cout << "dad  : " << z << " " << w << std::endl;
                             if (w + 1 < Dmin[z].size())
                             {
-                                std::cout << "dad sibling : " << z << " " << ++w << std::endl;
+                                // std::cout << "dad sibling : " << z << " " << ++w << std::endl;
 
-                                int z_instances = hyperperiod_ / mtasks_[z]->period;
-                                int k_instances = hyperperiod_ / mtasks_[k]->period;
+                                int z_k_hyp = std::lcm(mtasks_[z]->period, mtasks_[k]->period);
 
-                                for (int hc = 0; hc < hyperperiod_count; hc++)
-                                {
-                                    std::cout << "from : " << z << " " << w % z_instances + hc * z_instances << std::endl;
-                                    std::cout << "to : " << k << " " << l % k_instances + hc * k_instances << std::endl;
+                                int z_instances = z_k_hyp / mtasks_[z]->period;
+                                int k_instances = z_k_hyp / mtasks_[k]->period;
+
+                                for (int hc = 0; hc < hyperperiod_count * hyperperiod_ / z_k_hyp; hc++)
                                     res = insertJobLevelDependency(z, w % z_instances + hc * z_instances, k, l % k_instances + hc * k_instances);
-                                }
-                                std::cout << res << std::endl;
+
+                                // int z_instances = hyperperiod_ / mtasks_[z]->period;
+                                // int k_instances = hyperperiod_ / mtasks_[k]->period;
+
+                                // for (int hc = 0; hc < hyperperiod_count; hc++)
+                                //     res = insertJobLevelDependency(z, w % z_instances + hc * z_instances, k, l % k_instances + hc * k_instances);
                                 k = z;
                                 l = w;
                                 z = -1;
                                 w = -1;
                             }
-
-                            for (auto d : dependencies)
-                                std::cout << d.tf_ << " " << d.jf_ << " " << d.tt_ << " " << d.jt_ << std::endl;
-                            // break;
+                            if (verbose)
+                            {
+                                for (auto d : dependencies)
+                                    std::cout << d.tf_ << " " << d.jf_ << " " << d.tt_ << " " << d.jt_ << std::endl;
+                            }
                         }
                         else
                             break;
@@ -203,7 +235,7 @@ bool Becker::synthesizeDependencies(const std::vector<int> &chain, float deadlin
                 dep = res;
             }
         }
-        std::cout << "maxLatency: " << max_latency << std::endl;
+        // std::cout << "maxLatency: " << max_latency << std::endl;
 
         if (max_latency > deadline)
             return 0;
@@ -218,6 +250,9 @@ float Becker::computeChainMinMaxLatency(const std::vector<int> &chain)
     float max_latency = 0;
     if (chain.size() > 0)
     {
+        hyperperiod_ = mtasks_[chain[0]]->period;
+        for (int i = 1; i < chain.size(); i++)
+            hyperperiod_ = std::lcm(hyperperiod_, mtasks_[chain[i]]->period);
         // for (auto c : chain)
         //     std::cout << c << "\t";
         // std::cout << std::endl;
@@ -238,8 +273,7 @@ float Becker::computeChainMinMaxLatency(const std::vector<int> &chain)
 
             std::vector<std::pair<int, int>> leaves;
             std::pair<int, int> succ_root;
-            DPT tree;
-            tree.createRoot(i, j);
+            DPT tree(i, j);
 
             buildPropTree(chain, succ_root, leaves, i, j, 0, tree);
 
@@ -252,13 +286,16 @@ float Becker::computeChainMinMaxLatency(const std::vector<int> &chain)
                 cur_max_latency = maxLatency(i, j, l.first, l.second);
                 // printIntervals();
 
-                std::cout << i << " " << j << " " << l.first << " " << l.second << " " << succ_root.first << " " << succ_root.second << " min: " << cur_min_latency << " max: " << cur_max_latency << std::endl;
+                // std::cout << i << " " << j << " " << l.first << " " << l.second << " " << succ_root.first << " " << succ_root.second << " min: " << cur_min_latency << " max: " << cur_max_latency << std::endl;
 
                 if (cur_max_latency > max_latency)
                     max_latency = cur_max_latency;
                 if (cur_min_latency < min_latency && cur_min_latency > 0)
                     min_latency = cur_min_latency;
             }
+
+            // tree.printTree(tree.root, Rmax, Rmin, mtasks_);
+            // std::cout << "###################################" << std::endl;
         }
         std::cout << "minLatency: " << min_latency << "\tmaxLatency: " << max_latency << std::endl;
     }
@@ -282,12 +319,33 @@ int Becker::computeL(int i, int j, int k)
 
 bool Becker::follows(int i, int j, int k, int l)
 {
-    if (Rmax[k][l] - Rmin[k][l] > 0 || true)
+    if (Rmax[k][l] - Rmin[k][l] >= 0)
     {
-        // std::cout << Rmax[k][l] << " " << Dmin_local[k][l] << " " << Rmin[k][l] << " " << Dmax[i][j] << std::endl;
-        if (Rmax[k][l] >= Dmin_local[k][l] && Rmin[k][l] < Dmax[i][j])
+        // std::cout << "\tfollows:" << Rmax[k][l] << ">=" << Dmin_local[i][j] << " and " << Rmin[k][l] << " < " << Dmax[i][j] << std::endl;
+
+        if (Rmax[k][l] >= Dmin_local[i][j] && Rmin[k][l] < Dmax[i][j] && logicalBoundariesCheck(i, j, k, l))
             return true;
     }
+    return false;
+}
+
+bool Becker::logicalBoundariesCheck(int i, int j, int k, int l)
+{
+    for (int a = 0; a < dependencies.size(); a++)
+    {
+        if (dependencies[a].tf_ == i && dependencies[a].tt_ == k)
+        {
+            if (dependencies[a].jf_ == j)
+            {
+                int k_instances = hyperperiod_ / mtasks_[k]->period;
+                if (l < dependencies[a].jt_ + k_instances)
+                    return true;
+                else
+                    return false;
+            }
+        }
+    }
+    return true;
 }
 
 bool Becker::insertJobLevelDependency(int i, int j, int k, int l)
@@ -299,38 +357,70 @@ bool Becker::insertJobLevelDependency(int i, int j, int k, int l)
     JLD jld(i, j, k, l);
     dependencies.push_back(jld);
 
-    // std::cout << "before: " << Rmin[k][l] << " ";
-
     float max_Rmin = 0;
-    for (int a = 0; a <= j; a++)
+
+    for (int a = 0; a < dependencies.size(); a++)
     {
-        if (Rmin[i][a] + mtasks_[i]->wcet > max_Rmin)
-            max_Rmin = Rmin[i][a] + mtasks_[i]->wcet;
+        if (dependencies[a].tt_ == k && dependencies[a].jt_ == l) //all the predecessors of k,l
+        {
+            if (Rmin[dependencies[a].tf_][dependencies[a].jf_] + mtasks_[dependencies[a].tf_]->wcet > max_Rmin)
+                max_Rmin = Rmin[dependencies[a].tf_][dependencies[a].jf_] + mtasks_[dependencies[a].tf_]->wcet;
+        }
     }
 
-    Rmin[k][l] = std::max(max_Rmin, Rmin[k][l]);
-    Dmin[k][l] = Rmin[k][l] - mtasks_[k]->wcet;
-    if (l > 0)
-        Rmax[k][l - 1] = Rmin[k][l] - mtasks_[k]->wcet;
-
-    // std::cout << "after: " << Rmin[k][l] << "\n";
-
-    // std::cout << "before: " << Rmax[i][j] << " ";
     float min_Rmax = std::numeric_limits<float>::max();
-    // int limit = hyperperiod_ / mtasks_[k]->period - l % hyperperiod_ / mtasks_[k]->period;
-    for (size_t a = l; a < Rmax[k].size(); a++)
+    for (int a = 0; a < dependencies.size(); a++)
     {
-        if (Rmax[k][a] - mtasks_[i]->wcet < min_Rmax)
-            min_Rmax = Rmax[k][a] - mtasks_[i]->wcet;
+        if (dependencies[a].tf_ == i && dependencies[a].jf_ == j) //all the successor of i,j
+        {
+            if (Rmax[dependencies[a].tt_][dependencies[a].jt_] - mtasks_[dependencies[a].tf_]->wcet < min_Rmax)
+                min_Rmax = Rmax[dependencies[a].tt_][dependencies[a].jt_] - mtasks_[dependencies[a].tf_]->wcet;
+        }
     }
-    Rmax[i][j] = std::min(min_Rmax, Rmax[i][j]);
+
+    float newRminkl = std::max(max_Rmin, Rmin[k][l]);
+    float newRmaxij = std::min(min_Rmax, Rmax[i][j]);
+    float newDmaxij;
     if (j > 0)
-        Dmax[i][j - 1] = Rmax[i][j] + mtasks_[i]->wcet;
-    // std::cout << "after: " << Rmax[i][j] << "\n";
+        newDmaxij = newRmaxij + mtasks_[i]->wcet;
+
+    if (newRminkl > Rmax[k][l] || Rmin[i][j] > newRmaxij || (j > 0 && Dmin[i][j] > newDmaxij))
+    {
+        // std::cout << "YUCK!!!!!!!!!!!!!!!!" << std::endl;
+        return false;
+    }
+
+    //values update
+    Rmin[k][l] = newRminkl;
+    Rmax[i][j] = newRmaxij;
+    if (j > 0)
+        Dmax[i][j - 1] = newDmaxij;
 
     return true;
 }
 
 Becker::~Becker()
 {
+
+    mtasks_.clear();
+    for (auto r : Rmin)
+        r.clear();
+    Rmin.clear();
+
+    for (auto r : Rmax)
+        r.clear();
+    Rmax.clear();
+
+    for (auto d : Dmin)
+        d.clear();
+    Dmin.clear();
+
+    for (auto d : Dmin_local)
+        d.clear();
+    Dmin_local.clear();
+
+    for (auto d : Dmax)
+        d.clear();
+    Dmax.clear();
+    dependencies.clear();
 }
