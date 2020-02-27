@@ -35,6 +35,7 @@ In this model, the communication between jobs utilizes buffers in shared memory,
 git clone https://github.com/mive93/multi-rate-DAG
 cd multi-rate-DAG
 mkdir build
+cd build
 cmake ../src
 ./main
 ```
