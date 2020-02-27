@@ -7,13 +7,11 @@
 
 #ifndef SAMPLES_SHAREDRESOURCE_HPP_
 #define SAMPLES_SHAREDRESOURCE_HPP_
-#include <DAG/PlainDAG.h>
 #include <Evaluation/Evaluation.h>
 #include <Evaluation/Scheduling.h>
 #include <VariableTaskSet/VariableTaskSet.h>
 #include <ctime>
 #include <iostream>
-#include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
 
 namespace samples
 {
@@ -50,18 +48,8 @@ sharedResource()
 
 	const auto& bestDAG = eval.evaluate(taskSet.createDAGs());
 
-	eval.exportReactionTimes("reactions");
-	eval.exportDataAges("ages");
-
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
-
-	PlainDAG plain(bestDAG, 6);
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -100,18 +88,8 @@ sharedInput()
 
 	const auto& bestDAG = eval.evaluate(taskSet.createDAGs());
 
-	eval.exportReactionTimes("reactions");
-	eval.exportDataAges("ages");
-
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
-
-	PlainDAG plain(bestDAG, 6);
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -144,18 +122,8 @@ cycles()
 
 	const auto& bestDAG = eval.evaluate(taskSet.createDAGs());
 
-	eval.exportReactionTimes("reactions");
-	eval.exportDataAges("ages");
-
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
-
-	PlainDAG plain(bestDAG, 6);
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -212,18 +180,8 @@ hercules()
 
 	const auto& bestDAG = eval.evaluate(taskSet.createDAGs());
 
-	eval.exportReactionTimes("reactions");
-	eval.exportDataAges("ages");
-
 	bestDAG.toTikz("hercules_dag.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("hercules_taskset.tex");
-
-	PlainDAG plain(bestDAG, taskSet.getPlainTaskSet().name.size());
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -263,18 +221,8 @@ simple_example()
 
 	scheduling::scheduleDAG(bestDAG, 2, "simple_schedule.tex");
 
-	eval.exportReactionTimes("reactions");
-	eval.exportDataAges("ages");
-
 	bestDAG.toTikz("simple_example.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("simple_example_taskset.tex");
-
-	PlainDAG plain(bestDAG, 6);
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -314,18 +262,8 @@ micaela_test()
 
 	scheduling::scheduleDAG(bestDAG, 2, "simple_schedule.tex");
 
-	eval.exportReactionTimes("reactions");
-	eval.exportDataAges("ages");
-
 	bestDAG.toTikz("simple_example.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("simple_example_taskset.tex");
-
-	PlainDAG plain(bestDAG, 6);
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;

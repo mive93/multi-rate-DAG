@@ -50,22 +50,9 @@ void DummyNodes::addToDAG(DAG &dag, unsigned hyperperiod)
 			syncEdges.push_back(Edge(node, endSync->second));
 	}
 
-<<<<<<< HEAD
-	auto dummy = std::make_shared<Node>(0, syncNodes.front()->offset, syncNodes.front()->offset,
-										syncNodes.front()->offset, 667);
-	dummy->name = "dummy0-" + std::to_string(static_cast<int>(syncNodes.front()->offset));
-	dummy->shortName = "0-" + std::to_string(static_cast<int>(syncNodes.front()->offset));
-	dummyTasks.push_back(dummy);
-	dummyChain.push_back(Edge(dag.getStart(), dummy));
-	dummyChain.push_back(Edge(dummy, syncNodes.front()));
-	for (auto it = syncNodes.begin(); it != syncNodes.end(); it++)
-=======
 	if(syncNodes.size() > 0)
->>>>>>> ae4d41d... Modify README, solve segfault
 	{
 
-<<<<<<< HEAD
-=======
 		auto dummy = std::make_shared<Node>(0, syncNodes.front()->offset, syncNodes.front()->offset,
 				syncNodes.front()->offset, 667);
 		dummy->name = "dummy0-" + std::to_string(static_cast<int>(syncNodes.front()->offset));
@@ -99,7 +86,6 @@ void DummyNodes::addToDAG(DAG &dag, unsigned hyperperiod)
 	}
 
 
->>>>>>> ae4d41d... Modify README, solve segfault
 	dag.addNodes(syncNodes);
 	dag.addNodes(dummyTasks);
 	dag.addEdges(dummyChain);

@@ -11,12 +11,6 @@
 #include <Evaluation/LatencyInfo.h>
 #include <Evaluation/SchedulingInfo.h>
 #include <MultiRate/MultiNode.h>
-#include <Simulation/ChainSim.h>
-#include <Simulation/JitterCount.h>
-#include <uavAP/Core/Object/IAggregatableObject.h>
-#include <uavAP/Core/Object/ObjectHandle.h>
-#include <uavAP/Core/Runner/IRunnableObject.h>
-#include <uavAP/Core/TimeProvider/ITimeProvider.h>
 #include "Benchmark/DataFiles.h"
 
 class Evaluation;
@@ -30,7 +24,7 @@ serialize(Archive& ar, Evaluation& eval);
 class TaskSet;
 class ITimeProvider;
 
-class Evaluation : public IAggregatableObject, public IRunnableObject
+class Evaluation 
 {
 public:
 
@@ -53,33 +47,6 @@ public:
 	std::vector<unsigned>
 	taskChainToNum(const std::vector<std::shared_ptr<MultiNode>>& chain);
 
-	void
-	printInfo() const;
-
-	void
-	notifyAggregationOnUpdate(const Aggregator& agg) override;
-
-	bool
-	run(RunStage stage) override;
-
-	void
-	exportLatency(const std::string& fileOffset);
-
-	void
-	exportReactionTimes(const std::string& filename);
-
-	void
-	exportDataAges(const std::string& filename);
-
-
-	const std::vector<uint8_t>&
-	getJitterCount(unsigned from, unsigned to) const;
-
-	void
-	addJitterCount(unsigned from, unsigned to);
-
-	void
-	exportJitterCount(const std::string& fileOffset);
 
 private:
 
@@ -89,34 +56,10 @@ private:
 	SchedulingInfo
 	getSchedulingInfo(const DAG& dag, const SchedulingConstraint& constraint);
 
-	void
-	initChainSims();
-
-	void
-	readTask(unsigned task);
-
-	void
-	writeTask(unsigned task);
 
 	std::vector<std::pair<std::vector<unsigned>, std::pair<LatencyCost, LatencyConstraint>>> latencyEval_;
-
 	std::pair<SchedulingCost, SchedulingConstraint> schedulingEval_;
-
-	std::vector<ChainSim> chainSims_;
-	JitterCounter jitterCounter_;
-
 	std::vector<std::vector<LatencyInfo>> latencies_;
-
-	ObjectHandle<TaskSet> taskSet_;
-	ObjectHandle<ITimeProvider> timeProvider_;
-
-	template<class Archive, typename >
-	inline friend void
-	dp::serialize(Archive& ar, Evaluation& eval)
-	{
-		ar & eval.latencyEval_;
-		ar & eval.schedulingEval_;
-	}
 
 };
 

@@ -30,7 +30,6 @@ set(MULTIRATE_SRCS	MultiRate/MultiNode.cpp
 set(DAG_SRCS	DAG/DAG.cpp
 				DAG/Edge.cpp
 				DAG/MaxProduct.cpp
-				DAG/PlainDAG.cpp
 				)
 					
 set(EVAL_SRCS	Evaluation/Evaluation.cpp
@@ -41,33 +40,13 @@ set(BENCH_SRCS	Benchmark/DataFiles.cpp
 				Benchmark/Becker.cpp
 				Benchmark/Benchmark.cpp
 				)
-			
-					
-set(SIM_SRCS	Simulation/TaskSet.cpp
-				Simulation/Task.cpp
-				Simulation/DAGScheduler.cpp
-				Simulation/CoreManager.cpp
-				Simulation/ChainSim.cpp
-				Simulation/JitterCount.cpp
-				)
-				
 				
 add_library(dag 	${VARIABLE_SRCS}
 					${MULTIRATE_SRCS}
 					${DAG_SRCS}
 					${EVAL_SRCS}
 					${BENCH_SRCS}
-					${SIM_SRCS}
 					)
 
-add_executable(main main.cpp
-					)
-
-target_link_libraries(main uavap_core dag)
-					
-					
-					
-add_executable(sim 	Simulation/Simulate.cpp
-					)
-
-target_link_libraries(sim uavap_core boost_system dag)
+add_executable(main main.cpp)
+target_link_libraries(main dag)

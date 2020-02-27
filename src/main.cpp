@@ -6,7 +6,6 @@
  */
 
 #include <DAG/MaxProduct.h>
-#include <DAG/PlainDAG.h>
 #include <Evaluation/Evaluation.h>
 #include <samples/SharedResource.hpp>
 #include <VariableTaskSet/VariableTaskSet.h>
@@ -20,8 +19,6 @@
 
 #include "Evaluation/Scheduling.h"
 #include <algorithm>
-
-#include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
 
 #include "Benchmark/Benchmark.h"
 
@@ -196,20 +193,11 @@ int multiTaskset()
 
 	const auto &bestDAG = eval.evaluate(allDags);
 
-	eval.exportReactionTimes("reactions");
-
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
 	std::cout << bestDAG.getNodeInfo() << std::endl;
 	bestDAG.getLatencyInfo({1, 1, 2, 3, 4});
 	//	scheduling::scheduleDAG(bestDAG, 4, "schedule_test.tex");
-
-	PlainDAG plain(bestDAG, 6);
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -243,13 +231,6 @@ int multiTaskset2()
 
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
-
-	PlainDAG plain(bestDAG, 2);
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	std::cout << bestDAG.getNodeInfo() << std::endl;
 
@@ -300,19 +281,9 @@ int multiTasksetPareto()
 
 	const auto &bestDAG = eval.evaluate(allDags);
 
-	eval.exportReactionTimes("reactions");
-	eval.exportDataAges("ages");
-
 	bestDAG.toTikz("prova.tex");
 	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
 	std::cout << bestDAG.getNodeInfo() << std::endl;
-
-	PlainDAG plain(bestDAG, 6);
-
-	std::ofstream file("data");
-	dp::serialize(plain, file);
-	dp::serialize(taskSet.getPlainTaskSet(), file);
-	dp::serialize(eval, file);
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -341,7 +312,7 @@ int main(int argc, char **argv)
 	for (int i = start; i < end; i++)
 	{
 		DataFiles f("res/reactions" + std::to_string(i) + ".csv", "res/data_age" + std::to_string(i) + ".csv", "res/schedulable_dags" + std::to_string(i) + ".csv", "res/times" + std::to_string(i) + ".csv", "res/deletions" + std::to_string(i) + ".csv", "res/permutations" + std::to_string(i) + ".csv");
-		WatersChallenge2015 test(10, 15, 1.5, WatersChallenge2015::N_AND_U, f, 4);
+		WatersChallenge2015 test(5, 15, 1.5, WatersChallenge2015::N_AND_U, f, 4);
 		if (!test.SoAcomparison(f))
 		{
 			i--;
