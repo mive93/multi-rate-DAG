@@ -32,14 +32,6 @@ TaskSet::getTask(unsigned taskId)
 	return fakeTasks_[taskId];
 }
 
-void
-TaskSet::notifyAggregationOnUpdate(const Aggregator& agg)
-{
-	scheduler_.setFromAggregationIfNotSet(agg);
-	dagScheduler_.setFromAggregationIfNotSet(agg);
-	coreManager_.setFromAggregationIfNotSet(agg);
-}
-
 bool
 TaskSet::run(RunStage stage)
 {
@@ -47,7 +39,7 @@ TaskSet::run(RunStage stage)
 	{
 	case RunStage::INIT:
 	{
-		if (!scheduler_.isSet())
+		if (!checkIsSetAll())
 		{
 			CPSLOG_ERROR << "Scheduler missing.";
 			return true;
@@ -82,7 +74,7 @@ TaskSet::fakeTask(const Task& task, unsigned taskId)
 
 	float c = getExectutionTime(taskId);
 
-	auto sched = scheduler_.get();
+	auto sched = get<IScheduler>();
 	sched->schedule(std::bind(&TaskSet::writeAndNotify, this, task.writeFunction, taskId),
 			Microseconds(static_cast<int>(c * 1000)));
 
@@ -94,10 +86,10 @@ TaskSet::writeAndNotify(const Function& writeTask, unsigned taskId)
 	writeTask();
 
 	CPSLOG_DEBUG << tasks_[taskId].name << " finished";
-	auto dagSched = dagScheduler_.get();
+	auto dagSched = get<DAGScheduler>();
 	dagSched->taskFinished(taskId);
 
-	auto coreMan = coreManager_.get();
+	auto coreMan = get<CoreManager>();
 	coreMan->taskFinished();
 }
 

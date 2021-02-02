@@ -32,6 +32,7 @@ class Evaluation : public AggregatableObject<TaskSet, ITimeProvider>, public IRu
 {
 public:
 
+	static constexpr TypeId typeId = "evaluation";
 
 	void
 	addLatency(const std::vector<std::shared_ptr<MultiNode>>& chain, const LatencyCost& cost, const LatencyConstraint& constraint);

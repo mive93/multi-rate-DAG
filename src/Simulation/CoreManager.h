@@ -7,8 +7,7 @@
 
 #ifndef SIMULATION_COREMANAGER_H_
 #define SIMULATION_COREMANAGER_H_
-#include <cpsCore/Aggregation/IAggregatableObject.h>
-#include <cpsCore/Aggregation/ObjectHandleContainer.hpp>
+#include <cpsCore/Aggregation/AggregatableObject.hpp>
 #include <cpsCore/Synchronization/IRunnableObject.h>
 
 class DAGScheduler;
@@ -16,17 +15,16 @@ class IScheduler;
 class TaskSet;
 
 
-class CoreManager : public IAggregatableObject, public IRunnableObject
+class CoreManager : public AggregatableObject<DAGScheduler, IScheduler, TaskSet>, public IRunnableObject
 {
 public:
+
+	static constexpr TypeId typeId = "CoreManager";
 
 	CoreManager(unsigned cores);
 
 	void
 	setNumCores(unsigned numCores);
-
-	void
-	notifyAggregationOnUpdate(const Aggregator& agg) override;
 
 	bool
 	run(RunStage stage) override;
@@ -44,11 +42,6 @@ private:
 
 	unsigned totalCores_;
 	unsigned availableCores_;
-
-	ObjectHandleContainer<DAGScheduler> dagScheduler_;
-	ObjectHandleContainer<IScheduler> scheduler_;
-	ObjectHandleContainer<TaskSet> taskSet_;
-
 
 };
 

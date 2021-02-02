@@ -11,10 +11,10 @@
 #include <Simulation/DAGScheduler.h>
 #include <Simulation/TaskSet.h>
 #include <VariableTaskSet/PlainTaskSet.h>
-#include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
-#include <uavAP/Core/Object/Aggregator.h>
-#include <uavAP/Core/Scheduler/MicroSimulator.h>
-#include <uavAP/Core/Runner/SimpleRunner.h>
+#include <cpsCore/Utilities/Scheduler/MicroSimulator.h>
+#include <cpsCore/Synchronization/SimpleRunner.h>
+#include <cpsCore/Aggregation/Aggregator.h>
+#include <cpsCore/Utilities/DataPresentation/BinarySerialization.hpp>
 #include <thread>
 
 int
@@ -36,7 +36,7 @@ main(int argc, char** argv)
 
 	std::cout << dag.nodeInfo << std::endl;
 
-	APLogger::instance()->setLogLevel(LogLevel::WARN);
+	CPSLogger::instance()->setLogLevel(LogLevel::WARN);
 	auto sim = std::make_shared<MicroSimulator>();
 	auto dagSched = std::make_shared<DAGScheduler>(dag);
 	auto coreMan = std::make_shared<CoreManager>(6);
@@ -56,7 +56,7 @@ main(int argc, char** argv)
 
 	if (runner.runAllStages())
 	{
-		APLOG_ERROR << "Something went wrong";
+		CPSLOG_ERROR << "Something went wrong";
 		return 1;
 	}
 

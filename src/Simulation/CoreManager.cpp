@@ -16,14 +16,6 @@ CoreManager::setNumCores(unsigned numCores)
 	totalCores_ = numCores;
 }
 
-void
-CoreManager::notifyAggregationOnUpdate(const Aggregator& agg)
-{
-	dagScheduler_.setFromAggregationIfNotSet(agg);
-	scheduler_.setFromAggregationIfNotSet(agg);
-	taskSet_.setFromAggregationIfNotSet(agg);
-}
-
 bool
 CoreManager::run(RunStage stage)
 {
@@ -31,7 +23,7 @@ CoreManager::run(RunStage stage)
 	{
 	case RunStage::INIT:
 	{
-		if (!dagScheduler_.isSet())
+		if (!checkIsSetAll())
 		{
 			CPSLOG_ERROR << "DAGScheduler missing.";
 			return true;
@@ -40,7 +32,7 @@ CoreManager::run(RunStage stage)
 	}
 	case RunStage::NORMAL:
 	{
-		auto sched = scheduler_.get();
+		auto sched = get<IScheduler>();
 		sched->schedule(std::bind(&CoreManager::getTask, this), Microseconds(0));
 		availableCores_ = totalCores_;
 		break;
@@ -76,17 +68,17 @@ CoreManager::getTask()
 		return;
 	}
 
-	auto dagSched = dagScheduler_.get();
+	auto dagSched = get<DAGScheduler>();
 
 	int next = dagSched->nextTask();
 	if (next == -1)
 		return;
 
-	auto taskSet = taskSet_.get();
+	auto taskSet = get<TaskSet>();
 
 	auto task = taskSet->getTask(next);
 
-	auto sched = scheduler_.get();
+	auto sched = get<IScheduler>();
 	sched->schedule(task, Microseconds(0));
 	availableCores_--;
 	if (availableCores_ > 0)

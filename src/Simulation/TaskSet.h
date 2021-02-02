@@ -8,8 +8,7 @@
 #ifndef SIMULATION_TASKSET_H_
 #define SIMULATION_TASKSET_H_
 #include <Simulation/Task.h>
-#include <cpsCore/Aggregation/IAggregatableObject.h>
-#include <cpsCore/Aggregation/ObjectHandleContainer.hpp>
+#include <cpsCore/Aggregation/AggregatableObject.hpp>
 #include <cpsCore/Synchronization/IRunnableObject.h>
 #include <VariableTaskSet/PlainTaskSet.h>
 #include <vector>
@@ -19,19 +18,18 @@ class IScheduler;
 class DAGScheduler;
 class CoreManager;
 
-class TaskSet : public IAggregatableObject, public IRunnableObject
+class TaskSet : public AggregatableObject<DAGScheduler, IScheduler, CoreManager>, public IRunnableObject
 {
 
 public:
+
+	static constexpr TypeId typeId = "Taskset";
 
 	TaskSet();
 
 	TaskSet(const PlainTaskSet& plain);
 
 	using Function = std::function<void()>;
-
-	void
-	notifyAggregationOnUpdate(const Aggregator& agg) override;
 
 	bool
 	run(RunStage stage) override;
@@ -70,11 +68,6 @@ private:
 	std::vector<Task> tasks_;
 
 	std::vector<Function> fakeTasks_;
-
-	ObjectHandleContainer<IScheduler> scheduler_;
-	ObjectHandleContainer<DAGScheduler> dagScheduler_;
-	ObjectHandleContainer<CoreManager> coreManager_;
-
 
 };
 

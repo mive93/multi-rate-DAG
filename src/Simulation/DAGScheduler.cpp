@@ -61,7 +61,7 @@ DAGScheduler::reset()
 
 	initDepMatrix();
 
-	auto coreMan = coreManager_.get();
+	auto coreMan = get<CoreManager>();
 	coreMan->syncReady();
 }
 
@@ -82,7 +82,7 @@ DAGScheduler::queueReady()
 void
 DAGScheduler::scheduleSync()
 {
-	auto scheduler = scheduler_.get();
+	auto scheduler = get<IScheduler>();
 	if (!scheduler)
 	{
 		CPSLOG_ERROR << "Scheduler missing. Cannot schedule sync nodes.";
@@ -105,7 +105,7 @@ DAGScheduler::run(RunStage stage)
 	{
 	case RunStage::INIT:
 	{
-		if (!scheduler_.isSet())
+		if (!checkIsSetAll())
 		{
 			CPSLOG_ERROR << "Scheduler missing.";
 			return true;
@@ -133,15 +133,8 @@ DAGScheduler::syncReady(unsigned syncId)
 		CPSLOG_ERROR << "Internal Deadline at " << dag_.syncTimes[syncId] << ": " << deadlineMatrix_.row(syncId);
 
 	queueReady();
-	auto coreMan = coreManager_.get();
+	auto coreMan = get<CoreManager>();
 	coreMan->syncReady();
-}
-
-void
-DAGScheduler::notifyAggregationOnUpdate(const Aggregator& agg)
-{
-	scheduler_.setFromAggregationIfNotSet(agg);
-	coreManager_.setFromAggregationIfNotSet(agg);
 }
 
 const DAG::NodeInfo&

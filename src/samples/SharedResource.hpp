@@ -13,7 +13,7 @@
 #include <VariableTaskSet/VariableTaskSet.h>
 #include <ctime>
 #include <iostream>
-#include <uavAP/Core/DataPresentation/BinarySerialization.hpp>
+#include <cpsCore/Utilities/DataPresentation/BinarySerialization.hpp>
 
 namespace samples
 {
