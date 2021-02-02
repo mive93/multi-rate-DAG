@@ -8,7 +8,7 @@
 #include <Evaluation/LatencyInfo.h>
 #include <Evaluation/Scheduling.h>
 #include <MultiRate/MultiRateTaskset.h>
-#include <uavAP/Core/Logging/APLogger.h>
+#include <cpsCore/Logging/CPSLogger.h>
 #include <Simulation/TaskSet.h>
 #include <cmath>
 #include <iostream>
@@ -194,12 +194,12 @@ Evaluation::run(RunStage stage)
 	{
 		if (!taskSet_.isSet())
 		{
-			APLOG_ERROR << "Taskset missing.";
+			CPSLOG_ERROR << "Taskset missing.";
 			return true;
 		}
 		if (!timeProvider_.isSet())
 		{
-			APLOG_ERROR << "Time Provider missing.";
+			CPSLOG_ERROR << "Time Provider missing.";
 			return true;
 		}
 		break;

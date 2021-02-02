@@ -47,11 +47,11 @@ add_library(dag 	${VARIABLE_SRCS}
 add_executable(main main.cpp
 					)
 
-target_link_libraries(main uavap_core dag)
+target_link_libraries(main uavAP dag)
 					
 					
 					
 add_executable(sim 	Simulation/Simulate.cpp
 					)
 
-target_link_libraries(sim uavap_core boost_system dag)
+target_link_libraries(sim uavAP boost_system dag)

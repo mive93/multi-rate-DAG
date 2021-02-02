@@ -9,9 +9,9 @@
 #define SIMULATION_DAGSCHEDULER_H_
 #include <DAG/PlainDAG.h>
 #include <Simulation/TaskSet.h>
-#include <uavAP/Core/Object/IAggregatableObject.h>
-#include <uavAP/Core/Object/ObjectHandle.h>
-#include <uavAP/Core/Runner/IRunnableObject.h>
+#include <cpsCore/Aggregation/IAggregatableObject.h>
+#include <cpsCore/Aggregation/ObjectHandleContainer.hpp>
+#include <cpsCore/Synchronization/IRunnableObject.h>
 
 class IScheduler;
 class CoreManager;
@@ -75,8 +75,8 @@ private:
 	std::multimap<float, int> ready_;
 	unsigned numNodes_;
 
-	ObjectHandle<IScheduler> scheduler_;
-	ObjectHandle<CoreManager> coreManager_;
+	ObjectHandleContainer<IScheduler> scheduler_;
+	ObjectHandleContainer<CoreManager> coreManager_;
 
 };
 

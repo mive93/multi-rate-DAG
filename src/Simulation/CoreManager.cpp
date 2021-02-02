@@ -6,9 +6,9 @@
  */
 #include <Simulation/CoreManager.h>
 #include <Simulation/DAGScheduler.h>
-#include <uavAP/Core/Logging/APLogger.h>
-#include <uavAP/Core/Scheduler/IScheduler.h>
-#include <uavAP/Core/Time.h>
+#include <cpsCore/Logging/CPSLogger.h>
+#include <cpsCore/Utilities/Scheduler/IScheduler.h>
+#include <cpsCore/Utilities/Time.hpp>
 
 void
 CoreManager::setNumCores(unsigned numCores)
@@ -33,7 +33,7 @@ CoreManager::run(RunStage stage)
 	{
 		if (!dagScheduler_.isSet())
 		{
-			APLOG_ERROR << "DAGScheduler missing.";
+			CPSLOG_ERROR << "DAGScheduler missing.";
 			return true;
 		}
 		break;

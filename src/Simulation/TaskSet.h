@@ -8,9 +8,9 @@
 #ifndef SIMULATION_TASKSET_H_
 #define SIMULATION_TASKSET_H_
 #include <Simulation/Task.h>
-#include <uavAP/Core/Object/IAggregatableObject.h>
-#include <uavAP/Core/Object/ObjectHandle.h>
-#include <uavAP/Core/Runner/IRunnableObject.h>
+#include <cpsCore/Aggregation/IAggregatableObject.h>
+#include <cpsCore/Aggregation/ObjectHandleContainer.hpp>
+#include <cpsCore/Synchronization/IRunnableObject.h>
 #include <VariableTaskSet/PlainTaskSet.h>
 #include <vector>
 #include <functional>
@@ -71,9 +71,9 @@ private:
 
 	std::vector<Function> fakeTasks_;
 
-	ObjectHandle<IScheduler> scheduler_;
-	ObjectHandle<DAGScheduler> dagScheduler_;
-	ObjectHandle<CoreManager> coreManager_;
+	ObjectHandleContainer<IScheduler> scheduler_;
+	ObjectHandleContainer<DAGScheduler> dagScheduler_;
+	ObjectHandleContainer<CoreManager> coreManager_;
 
 
 };

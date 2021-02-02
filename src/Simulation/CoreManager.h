@@ -7,9 +7,9 @@
 
 #ifndef SIMULATION_COREMANAGER_H_
 #define SIMULATION_COREMANAGER_H_
-#include <uavAP/Core/Object/IAggregatableObject.h>
-#include <uavAP/Core/Object/ObjectHandle.h>
-#include <uavAP/Core/Runner/IRunnableObject.h>
+#include <cpsCore/Aggregation/IAggregatableObject.h>
+#include <cpsCore/Aggregation/ObjectHandleContainer.hpp>
+#include <cpsCore/Synchronization/IRunnableObject.h>
 
 class DAGScheduler;
 class IScheduler;
@@ -45,9 +45,9 @@ private:
 	unsigned totalCores_;
 	unsigned availableCores_;
 
-	ObjectHandle<DAGScheduler> dagScheduler_;
-	ObjectHandle<IScheduler> scheduler_;
-	ObjectHandle<TaskSet> taskSet_;
+	ObjectHandleContainer<DAGScheduler> dagScheduler_;
+	ObjectHandleContainer<IScheduler> scheduler_;
+	ObjectHandleContainer<TaskSet> taskSet_;
 
 
 };

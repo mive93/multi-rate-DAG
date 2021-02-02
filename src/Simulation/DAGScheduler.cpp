@@ -6,9 +6,9 @@
  */
 #include <Simulation/CoreManager.h>
 #include <Simulation/DAGScheduler.h>
-#include <uavAP/Core/Logging/APLogger.h>
-#include <uavAP/Core/Scheduler/IScheduler.h>
-#include <uavAP/Core/Time.h>
+#include <cpsCore/Logging/CPSLogger.h>
+#include <cpsCore/Utilities/Scheduler/IScheduler.h>
+#include <cpsCore/Utilities/Time.hpp>
 #include <set>
 
 DAGScheduler::DAGScheduler(const PlainDAG& dag) :
@@ -51,11 +51,11 @@ DAGScheduler::taskFinished(unsigned taskId)
 void
 DAGScheduler::reset()
 {
-	APLOG_DEBUG << "DAGScheduler reset";
+	CPSLOG_DEBUG << "DAGScheduler reset";
 
 	if (!depMatrix_.col(depMatrix_.cols() - 1).isOnes())
 	{
-		APLOG_ERROR << "DEADLINE MISSED!!!!!!     "
+		CPSLOG_ERROR << "DEADLINE MISSED!!!!!!     "
 				<< depMatrix_.col(depMatrix_.cols() - 1).transpose();
 	}
 
@@ -85,7 +85,7 @@ DAGScheduler::scheduleSync()
 	auto scheduler = scheduler_.get();
 	if (!scheduler)
 	{
-		APLOG_ERROR << "Scheduler missing. Cannot schedule sync nodes.";
+		CPSLOG_ERROR << "Scheduler missing. Cannot schedule sync nodes.";
 		return;
 	}
 
@@ -107,7 +107,7 @@ DAGScheduler::run(RunStage stage)
 	{
 		if (!scheduler_.isSet())
 		{
-			APLOG_ERROR << "Scheduler missing.";
+			CPSLOG_ERROR << "Scheduler missing.";
 			return true;
 		}
 		break;
@@ -126,11 +126,11 @@ DAGScheduler::run(RunStage stage)
 void
 DAGScheduler::syncReady(unsigned syncId)
 {
-	APLOG_TRACE << "Sync ready: " << syncId;
+	CPSLOG_TRACE << "Sync ready: " << syncId;
 	depMatrix_.col(numNodes_ + syncId).setZero();
 
 	if (!deadlineMatrix_.row(syncId).isZero())
-		APLOG_ERROR << "Internal Deadline at " << dag_.syncTimes[syncId] << ": " << deadlineMatrix_.row(syncId);
+		CPSLOG_ERROR << "Internal Deadline at " << dag_.syncTimes[syncId] << ": " << deadlineMatrix_.row(syncId);
 
 	queueReady();
 	auto coreMan = coreManager_.get();
@@ -168,7 +168,7 @@ DAGScheduler::taskFromJob(int job)
 		if (dag_.groupMatrix.coeff(job, k))
 			return k;
 
-	APLOG_ERROR << "Group matrix does not have an entry for " << job;
+	CPSLOG_ERROR << "Group matrix does not have an entry for " << job;
 	return -1;
 }
 

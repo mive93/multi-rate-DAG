@@ -7,7 +7,7 @@
 
 #ifndef SIMULATION_CHAINSIM_H_
 #define SIMULATION_CHAINSIM_H_
-#include <uavAP/Core/Time.h>
+#include <cpsCore/Utilities/Time.hpp>
 #include <vector>
 
 struct JitterCounter;

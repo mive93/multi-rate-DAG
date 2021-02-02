@@ -7,9 +7,9 @@
 #include <Simulation/CoreManager.h>
 #include <Simulation/DAGScheduler.h>
 #include <Simulation/TaskSet.h>
-#include <uavAP/Core/Logging/APLogger.h>
-#include <uavAP/Core/Scheduler/IScheduler.h>
-#include <uavAP/Core/Time.h>
+#include <cpsCore/Logging/CPSLogger.h>
+#include <cpsCore/Utilities/Scheduler/IScheduler.h>
+#include <cpsCore/Utilities/Time.hpp>
 
 TaskSet::TaskSet() :
 		seed_(0)
@@ -49,7 +49,7 @@ TaskSet::run(RunStage stage)
 	{
 		if (!scheduler_.isSet())
 		{
-			APLOG_ERROR << "Scheduler missing.";
+			CPSLOG_ERROR << "Scheduler missing.";
 			return true;
 		}
 		break;
@@ -93,7 +93,7 @@ TaskSet::writeAndNotify(const Function& writeTask, unsigned taskId)
 {
 	writeTask();
 
-	APLOG_DEBUG << tasks_[taskId].name << " finished";
+	CPSLOG_DEBUG << tasks_[taskId].name << " finished";
 	auto dagSched = dagScheduler_.get();
 	dagSched->taskFinished(taskId);
 
@@ -104,7 +104,7 @@ TaskSet::writeAndNotify(const Function& writeTask, unsigned taskId)
 float
 TaskSet::getExectutionTime(unsigned taskId)
 {
-	APLOG_TRACE << "Get exec time:" << tasks_[taskId].wcet;
+	CPSLOG_TRACE << "Get exec time:" << tasks_[taskId].wcet;
 
 	int val = rand();
 	float c = (float)val/RAND_MAX * (tasks_[taskId].wcet - tasks_[taskId].bcet - 0.001) + tasks_[taskId].bcet; //actual wcet can lead to sched problems

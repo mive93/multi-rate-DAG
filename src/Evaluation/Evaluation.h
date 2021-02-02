@@ -13,10 +13,10 @@
 #include <MultiRate/MultiNode.h>
 #include <Simulation/ChainSim.h>
 #include <Simulation/JitterCount.h>
-#include <uavAP/Core/Object/IAggregatableObject.h>
-#include <uavAP/Core/Object/ObjectHandle.h>
-#include <uavAP/Core/Runner/IRunnableObject.h>
-#include <uavAP/Core/TimeProvider/ITimeProvider.h>
+#include <cpsCore/Aggregation/IAggregatableObject.h>
+#include <cpsCore/Aggregation/ObjectHandleContainer.hpp>
+#include <cpsCore/Synchronization/IRunnableObject.h>
+#include <cpsCore/Utilities/TimeProvider/ITimeProvider.h>
 
 class Evaluation;
 namespace dp
@@ -106,8 +106,8 @@ private:
 
 	std::vector<std::vector<LatencyInfo>> latencies_;
 
-	ObjectHandle<TaskSet> taskSet_;
-	ObjectHandle<ITimeProvider> timeProvider_;
+	ObjectHandleContainer<TaskSet> taskSet_;
+	ObjectHandleContainer<ITimeProvider> timeProvider_;
 
 	template<class Archive, typename >
 	inline friend void
