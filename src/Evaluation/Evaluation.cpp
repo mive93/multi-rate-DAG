@@ -178,13 +178,6 @@ Evaluation::printInfo() const
 	}
 }
 
-void
-Evaluation::notifyAggregationOnUpdate(const Aggregator& agg)
-{
-	taskSet_.setFromAggregationIfNotSet(agg);
-	timeProvider_.setFromAggregationIfNotSet(agg);
-}
-
 bool
 Evaluation::run(RunStage stage)
 {
@@ -192,14 +185,9 @@ Evaluation::run(RunStage stage)
 	{
 	case RunStage::INIT:
 	{
-		if (!taskSet_.isSet())
+		if (!checkIsSetAll())
 		{
-			CPSLOG_ERROR << "Taskset missing.";
-			return true;
-		}
-		if (!timeProvider_.isSet())
-		{
-			CPSLOG_ERROR << "Time Provider missing.";
+			CPSLOG_ERROR << "Missing dependencies";
 			return true;
 		}
 		break;
@@ -207,7 +195,7 @@ Evaluation::run(RunStage stage)
 	case RunStage::NORMAL:
 	{
 		initChainSims();
-		auto set = taskSet_.get();
+		auto set = get<TaskSet>();
 		for (unsigned k = 0; k < set->getNumTasks(); k++)
 		{
 			set->setReadFunction(k, std::bind(&Evaluation::readTask, this, k));
@@ -236,7 +224,7 @@ Evaluation::initChainSims()
 void
 Evaluation::readTask(unsigned task)
 {
-	auto tp = timeProvider_.get();
+	auto tp = get<ITimeProvider>();
 	auto time = tp->now();
 	for (auto& sim : chainSims_)
 		sim.read(task, time);
@@ -280,7 +268,7 @@ Evaluation::addJitterCount(unsigned from, unsigned to)
 void
 Evaluation::writeTask(unsigned task)
 {
-	auto tp = timeProvider_.get();
+	auto tp = get<ITimeProvider>();
 	auto time = tp->now();
 	for (auto& sim : chainSims_)
 		sim.write(task, time);

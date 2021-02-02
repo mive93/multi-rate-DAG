@@ -13,8 +13,7 @@
 #include <MultiRate/MultiNode.h>
 #include <Simulation/ChainSim.h>
 #include <Simulation/JitterCount.h>
-#include <cpsCore/Aggregation/IAggregatableObject.h>
-#include <cpsCore/Aggregation/ObjectHandleContainer.hpp>
+#include <cpsCore/Aggregation/AggregatableObject.hpp>
 #include <cpsCore/Synchronization/IRunnableObject.h>
 #include <cpsCore/Utilities/TimeProvider/ITimeProvider.h>
 
@@ -29,7 +28,7 @@ serialize(Archive& ar, Evaluation& eval);
 class TaskSet;
 class ITimeProvider;
 
-class Evaluation : public IAggregatableObject, public IRunnableObject
+class Evaluation : public AggregatableObject<TaskSet, ITimeProvider>, public IRunnableObject
 {
 public:
 
@@ -54,9 +53,6 @@ public:
 
 	void
 	printInfo() const;
-
-	void
-	notifyAggregationOnUpdate(const Aggregator& agg) override;
 
 	bool
 	run(RunStage stage) override;
@@ -106,12 +102,9 @@ private:
 
 	std::vector<std::vector<LatencyInfo>> latencies_;
 
-	ObjectHandleContainer<TaskSet> taskSet_;
-	ObjectHandleContainer<ITimeProvider> timeProvider_;
-
 	template<class Archive, typename >
 	inline friend void
-	dp::serialize(Archive& ar, Evaluation& eval)
+	serialize(Archive& ar, Evaluation& eval)
 	{
 		ar & eval.latencyEval_;
 		ar & eval.schedulingEval_;
