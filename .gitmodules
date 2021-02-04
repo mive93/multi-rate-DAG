@@ -1,0 +1,3 @@
+[submodule "uavAP"]
+	path = uavAP
+	url = https://github.com/theilem/uavAP

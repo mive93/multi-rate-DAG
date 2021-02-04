@@ -5,8 +5,13 @@ project (dags)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -std=c++17 -fPIC -Wall -Wno-int-in-bool-context")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall")
 
+include_directories(${CMAKE_SOURCE_DIR}/../uavAP/src)
+link_directories(${CMAKE_SOURCE_DIR}/../uavAP/build/src/Core/)
+message(${CMAKE_SOURCE_DIR}/../uavAP/src/build/Core/)
+
 include_directories(${CMAKE_SOURCE_DIR}
-					"/usr/local/include/eigen3/")
+					"/usr/local/include/eigen3/"
+					)
 
 set(VARIABLE_SRCS	VariableTaskSet/VariableTaskSet.cpp
 					VariableTaskSet/VariableMultiEdge.cpp
