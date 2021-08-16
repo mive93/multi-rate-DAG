@@ -7,6 +7,9 @@
 #include <iostream>
 #include <iomanip>
 
+#include "dagSched/Taskset.h"
+#include "dagSched/tests.h"
+
 #define COL_END "\033[0m"
 #define COL_CYANB "\033[1;36m"
 // Simple Timer
@@ -77,6 +80,10 @@ namespace scheduling
 
     bool
     scheduleDAG(const DAG &dag, const unsigned nProc,
+            const std::string &filename = "", const bool verbose = false);
+
+    bool
+    scheduleDAGCasini(const DAG &dag, const unsigned nProc,
             const std::string &filename = "", const bool verbose = false);
 
 }

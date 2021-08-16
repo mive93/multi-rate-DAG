@@ -131,7 +131,7 @@ Evaluation::getSchedulingInfo(const DAG& dag, const SchedulingConstraint& constr
 
 	for (unsigned m = std::ceil(u); m <= constraint.maxCores; m++)
 	{
-		if (scheduling::scheduleDAG(dag, m))
+		if (scheduling::scheduleDAGCasini(dag, m))
 			return SchedulingInfo(m);
 	}
 

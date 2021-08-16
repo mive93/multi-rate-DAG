@@ -13,20 +13,21 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 # Submodules
 #-------------------------------------------------------------------------------
 
-# add_subdirectory()
+add_subdirectory(DAG-scheduling)
 
 #-------------------------------------------------------------------------------
 # Build libraries
 #-------------------------------------------------------------------------------
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/multi-rate-DAG)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/multi-rate-DAG
+                    ${CMAKE_CURRENT_SOURCE_DIR}/DAG-scheduling/include)
 
 file(GLOB multiRateDAG-SRC "src/*/*.cpp" "src/*.cpp")
 add_library(multiRateDAG SHARED ${multiRateDAG-SRC})
-target_link_libraries(multiRateDAG ${multiRateDAG-LIBS} )
+target_link_libraries(multiRateDAG ${multiRateDAG-LIBS} dag-sched)
 
 #-------------------------------------------------------------------------------
 # Build executables
 #-------------------------------------------------------------------------------
-add_executable(demo app/main.cpp)
-target_link_libraries(demo multiRateDAG)
+add_executable(demoMRD app/main.cpp)
+target_link_libraries(demoMRD multiRateDAG)

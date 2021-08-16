@@ -178,6 +178,8 @@ multiTaskset()
 	bestDAG.getLatencyInfo({1,1,2,3,4});
 //	scheduling::scheduleDAG(bestDAG, 4, "schedule_test.tex");
 
+	std::cout<<"Casini and 8 proc"<<scheduling::scheduleDAGCasini(bestDAG, 8)<<std::endl;
+
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
 

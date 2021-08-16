@@ -287,3 +287,69 @@ bool scheduling::scheduleDAG(const DAG &dag, const unsigned nProc,const std::str
     
     return true;
 }
+
+bool scheduling::scheduleDAGCasini(const DAG &dag, const unsigned nProc,const std::string &filename, const bool verbose){
+
+    dagSched::Taskset taskset;
+    dagSched::DAGTask t;
+
+    std::vector<dagSched::SubTask*> vertices;
+
+    //convert into correct data structure
+
+    for (auto node : dag.getNodes()){
+
+        dagSched::SubTask *v = new dagSched::SubTask;
+        v->id = node->uniqueId;
+        v->c = node->wcet;
+        vertices.push_back(v);
+    }
+
+    for (auto edge : dag.getEdges()){
+
+        int id_from = -1;
+        int id_to = -1;
+        for(int i=0; i<vertices.size(); ++i){
+            if(vertices[i]->id == edge.from->uniqueId)
+                id_from = i;
+            else if(vertices[i]->id == edge.to->uniqueId)
+                id_to = i;
+        }
+
+        vertices[id_from]->succ.push_back(vertices[id_to]);
+        vertices[id_to]->pred.push_back(vertices[id_from]);
+    }
+
+    t.setVertices(vertices);
+    
+    t.setPeriod(dag.getPeriod());
+    t.setDeadline(dag.getPeriod());
+
+    // compute all task related info
+
+    t.transitiveReduction();
+    t.computeWorstCaseWorkload();
+    t.computeVolume();
+    t.computeLength();
+    t.computeUtilization();
+    t.computeDensity();
+
+    // add single task to taskset
+    taskset.tasks.push_back(t);
+
+    // compute all taskset related info
+    taskset.computeUtilization();
+    taskset.computeHyperPeriod();
+    taskset.computeMaxDensity();
+
+    dagSched::WorstFitProcessorsAssignment(taskset, nProc);
+
+    // debug
+    // std::cout<<taskset.tasks[0]<<std::endl;
+    // taskset.tasks[0].saveAsDot("dag.dot");
+
+    bool sched = dagSched::P_LP_FTP_Casini2018_C(taskset, nProc);
+    std::cout<<"sched :"<<sched<<std::endl;
+    return sched;
+
+}

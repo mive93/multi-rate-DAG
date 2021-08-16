@@ -1,0 +1,3 @@
+[submodule "DAG-scheduling"]
+	path = DAG-scheduling
+	url = https://github.com/mive93/DAG-scheduling
