@@ -136,14 +136,14 @@ multiTaskset()
 	tstart = time(0);
 	VariableTaskSet taskSet;
 
-	auto task1 = taskSet.addTask(5, 2.5, "imu");
-	auto task2 = taskSet.addTask(20, 5.2, "gps");
-	auto task3 = taskSet.addTask(10, 4.8, "planner");
-	auto task4 = taskSet.addTask(10, 8, "controller");
-	auto task5 = taskSet.addTask(20, 9, "act");
-	auto task6 = taskSet.addTask(40, 13, "train");
+	auto task1 = taskSet.addTask(5, 2, "imu");
+	auto task2 = taskSet.addTask(20, 4, "gps");
+	auto task3 = taskSet.addTask(10, 2, "planner");
+	auto task4 = taskSet.addTask(10, 2, "controller");
+	auto task5 = taskSet.addTask(20, 2, "act");
+	// auto task6 = taskSet.addTask(40, 13, "train");
 
-	task6->bcet = 10;
+	// task6->bcet = 10;
 //	task3->bcet = 4;
 //	auto task7 = taskSet.addTask(80, 50, "independent");
 
@@ -151,9 +151,9 @@ multiTaskset()
 
 	taskSet.addDataEdge(task1, task3, { 0, 1, 2 });
 	taskSet.addDataEdge(task1, task4, { 0, 1, 2 });
-	taskSet.addDataEdge(task2, task3, { 0, 1, 2 });
-	taskSet.addDataEdge(task2, task4, { 0, 1, 2 });
-	taskSet.addDataEdge(task4, task5, { 0, 1, 2 });
+	// taskSet.addDataEdge(task2, task3, { 0, 1, 2 });
+	// taskSet.addDataEdge(task2, task4, { 0, 1, 2 });
+	// taskSet.addDataEdge(task4, task5, { 0, 1, 2 });
 //	taskSet.addDataEdge(task1, task6,  { 7, 8 });
 //	taskSet.addDataEdge(task2, task6,  { 1,2 });
 //	taskSet.addDataEdge(task5, task6,  { 1,2 });
@@ -165,10 +165,10 @@ multiTaskset()
 	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
 
 	Evaluation eval;
-	eval.addLatency({task1, task1,task3, task4, task5}, LatencyCost(1,15), LatencyConstraint(200,200));
-	eval.addLatency({task2, task2, task3, task4, task5}, LatencyCost(1,3), LatencyConstraint(70,70));
+	eval.addLatency({task1, task1,task3, task4, task5}, LatencyCost(1,15), LatencyConstraint(500,500));
+	// eval.addLatency({task2, task2, task3, task4, task5}, LatencyCost(1,3), LatencyConstraint(70,70));
 //	eval.addLatency({task1, task3}, LatencyCost(1,1), LatencyConstraint(25,25));
-	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(4));
+	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(16));
 
 	const auto& bestDAG = eval.evaluate(allDags);
 
@@ -178,7 +178,72 @@ multiTaskset()
 	bestDAG.getLatencyInfo({1,1,2,3,4});
 //	scheduling::scheduleDAG(bestDAG, 4, "schedule_test.tex");
 
-	std::cout<<"Casini and 8 proc"<<scheduling::scheduleDAGCasini(bestDAG, 8)<<std::endl;
+	std::cout<<"Casini on best"<<scheduling::scheduleDAGCasini(bestDAG, 16, "dag.dot")<<std::endl;
+
+	tend = time(0);
+	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
+
+	return 0;
+}
+
+
+int
+RTSS21IndustryChallenge()
+{
+	time_t tstart, tend;
+	tstart = time(0);
+	VariableTaskSet taskSet;
+
+	auto task1 	= taskSet.addTask(100,	2, 	"radar");
+	auto task2 	= taskSet.addTask(100,	2, 	"lidar");
+	auto task3 	= taskSet.addTask(40, 	2, 	"camera");
+	auto task4 	= taskSet.addTask(10, 	2, 	"gps");
+	auto task5 	= taskSet.addTask(40, 	2, 	"perception2D");
+	auto task6 	= taskSet.addTask(100,	2, 	"perception3D");
+	auto task7 	= taskSet.addTask(100,	2, 	"perceptionFusion");
+	auto task8 	= taskSet.addTask(100,	2, 	"localization");
+	auto task9 	= taskSet.addTask(100,	2, 	"tracking");
+	auto task10 = taskSet.addTask(100,	2, 	"prediction");
+	auto task11 = taskSet.addTask(100,	2, 	"planning");
+	auto task12 = taskSet.addTask(10, 	2, 	"control");
+
+	taskSet.addPrecedenceEdge(task1, 	task7);
+	taskSet.addDataEdge(task2, 	task5, 	{ 0, 1}); //{ 0, 1, 2, 3, 4 });
+	taskSet.addPrecedenceEdge(task3, 	task6);
+	taskSet.addDataEdge(task4, 	task8, 	{ 0, 1}); //{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+	taskSet.addDataEdge(task5, 	task7, 	{ 0, 1}); //{ 0, 1, 2, 3, 4 });
+	taskSet.addPrecedenceEdge(task6, 	task7);
+	taskSet.addPrecedenceEdge(task7, 	task9);
+	taskSet.addPrecedenceEdge(task8, 	task11);
+	taskSet.addPrecedenceEdge(task9, 	task10);
+	taskSet.addPrecedenceEdge(task10, 	task11);
+	taskSet.addDataEdge(task11, task12, { 0, 1}); //{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+
+	taskSet.createBaselineTaskset();
+
+	auto& allDags = taskSet.createDAGs();
+
+	std::cout << allDags.size() << " total valid DAGs were created" << std::endl;
+
+	Evaluation eval;
+	eval.addLatency({task1, task7, task9, task10, task11, task12}, LatencyCost(1,15), LatencyConstraint(1500,1500));
+	// eval.addLatency({task3, task5, task7, task9, task10, task11, task12}, LatencyCost(1,15), LatencyConstraint(1500,1500));
+	// eval.addLatency({task2, task6, task7, task9, task10, task11, task12}, LatencyCost(1,15), LatencyConstraint(1500,1500));
+	// eval.addLatency({task2, task8, task11, task12}, LatencyCost(1,15), LatencyConstraint(1500,1500));
+	// eval.addLatency({task4, task8, task11, task12}, LatencyCost(1,15), LatencyConstraint(1500,1500));
+
+	eval.addScheduling(SchedulingCost(20), SchedulingConstraint(16));
+
+	const auto& bestDAG = eval.evaluate(allDags);
+
+	bestDAG.toTikz("prova.tex");
+	bestDAG.getOriginatingTaskset()->toTikz("cool.tex");
+	std::cout << bestDAG.getNodeInfo()<< std::endl;
+	// bestDAG.getLatencyInfo({1,1,2,3,4});
+
+//	scheduling::scheduleDAG(bestDAG, 4, "schedule_test.tex");
+
+	std::cout<<"Casini on best"<<scheduling::scheduleDAGCasini(bestDAG, 16, "dag.dot")<<std::endl;
 
 	tend = time(0);
 	std::cout << "It took " << difftime(tend, tstart) << " second(s)." << std::endl;
@@ -226,7 +291,7 @@ multiTaskset2()
 int
 main()
 {
-	return multiTaskset();
+	return RTSS21IndustryChallenge();
 
 }
 

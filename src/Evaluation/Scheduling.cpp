@@ -296,12 +296,16 @@ bool scheduling::scheduleDAGCasini(const DAG &dag, const unsigned nProc,const st
     std::vector<dagSched::SubTask*> vertices;
 
     //convert into correct data structure
+    std::vector<dagSched::SubTask*> synch_nodes;
 
     for (auto node : dag.getNodes()){
 
         dagSched::SubTask *v = new dagSched::SubTask;
         v->id = node->uniqueId;
         v->c = node->wcet;
+        if(node->groupId == 667)
+            synch_nodes.push_back(v);
+        
         vertices.push_back(v);
     }
 
@@ -342,14 +346,19 @@ bool scheduling::scheduleDAGCasini(const DAG &dag, const unsigned nProc,const st
     taskset.computeHyperPeriod();
     taskset.computeMaxDensity();
 
-    dagSched::WorstFitProcessorsAssignment(taskset, nProc);
+    dagSched::WorstFitProcessorsAssignment(taskset, nProc-1);
+
+    for(int i; i< synch_nodes.size(); ++i)
+        synch_nodes[i]->core = nProc-1;
 
     // debug
-    // std::cout<<taskset.tasks[0]<<std::endl;
-    // taskset.tasks[0].saveAsDot("dag.dot");
+    if(filename != ""){
+        std::cout<<taskset.tasks[0]<<std::endl;
+        taskset.tasks[0].saveAsDot("dag.dot");
+    }
 
     bool sched = dagSched::P_LP_FTP_Casini2018_C(taskset, nProc);
-    std::cout<<"sched :"<<sched<<std::endl;
+    // std::cout<<"sched :"<<sched<<std::endl;
     return sched;
 
 }

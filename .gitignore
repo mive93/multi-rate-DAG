@@ -1,3 +1,4 @@
 bld
 build
-src/.vscode*
+src/
+.vscode*
