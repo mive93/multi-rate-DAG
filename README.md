@@ -37,6 +37,7 @@ cd multi-rate-DAG
 mkdir build
 cd build
 cmake ../src
+make
 ./main
 ```
 
